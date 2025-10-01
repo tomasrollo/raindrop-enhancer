@@ -14,7 +14,7 @@ class LinkCollectionLink(SQLModel, table=True):
 
     link_id: Optional[int] = Field(
         default=None,
-        foreign_key="link_records.raindrop_id",
+        foreign_key="links.raindrop_id",
         primary_key=True,
     )
     collection_id: Optional[int] = Field(
@@ -27,7 +27,7 @@ class LinkCollectionLink(SQLModel, table=True):
 class LinkRecord(SQLModel, table=True):
     """Persisted metadata about a Raindrop link and its processing state."""
 
-    __tablename__: ClassVar[str] = "link_records"
+    __tablename__: ClassVar[str] = "links"
 
     raindrop_id: int = Field(primary_key=True, index=True)
     url: str = Field()
@@ -78,7 +78,7 @@ class TagSuggestion(SQLModel, table=True):
     __tablename__: ClassVar[str] = "tag_suggestions"
 
     raindrop_id: int = Field(
-        foreign_key="link_records.raindrop_id",
+        foreign_key="links.raindrop_id",
         primary_key=True,
     )
     tag: str = Field(default="", primary_key=True)

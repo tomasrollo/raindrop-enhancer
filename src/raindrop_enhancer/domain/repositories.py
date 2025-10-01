@@ -138,6 +138,24 @@ class SQLiteRepository:
                 _load_relationships(record)
             return records
 
+    def list_all_links(self) -> list[LinkRecord]:
+        """Return all links with eager loaded relationships."""
+
+        with self.session() as session:
+            records = list(session.exec(select(LinkRecord)).all())
+            for record in records:
+                _load_relationships(record)
+                session.expunge(record)
+            return records
+
+    def get_collection(self, collection_id: int) -> Collection | None:
+        with self.session() as session:
+            record = session.get(Collection, collection_id)
+            if record is None:
+                return None
+            session.expunge(record)
+            return record
+
     # ------------------------------------------------------------------
     # Sync run audit log operations
     # ------------------------------------------------------------------
