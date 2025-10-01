@@ -2,6 +2,8 @@
 
 _Date: 2025-10-01_
 
+For full CLI reference and advanced troubleshooting, see [README.md](../../README.md).
+
 ## Prerequisites
 - Python 3.13 installed
 - `uv` available on PATH (`pipx install uv` if needed)
@@ -87,8 +89,17 @@ rm -rf "$RAINDROP_ENHANCER_DATA"/exports/*
 
 
 ## Rate Limit & Troubleshooting
-- **Rate limits:** The CLI automatically retries with exponential backoff up to 60s and reports Raindrop `X-RateLimit-*` headers. If you hit the 120-requests-per-minute limit, wait until `rate_limit_reset` before rerunning.
+
+- **Rate limits:** The CLI automatically retries with exponential backoff up to 60s and reports Raindrop `X-RateLimit-*` headers (`rate_limit_limit`, `rate_limit_remaining`, `rate_limit_reset`). If you hit the 120-requests-per-minute limit, wait until `rate_limit_reset` before rerunning.
 - **Content extraction failures:** Logged to `$DATA/manual_review.log`; use `reprocess` after manual checks.
 - **Config file issues:** Ensure the config path is correct and permissions are 0600. Use `configure` to regenerate if needed.
 - **Token expired:** Delete or edit your config file and rerun `configure`.
 - **Dry run:** Use `--dry-run` to exercise API fetches without writing JSON export.
+
+### Common Issues
+
+- **Database errors:** Ensure your DB path is writable and not locked by another process.
+- **API errors:** Check your token validity and network connectivity. Inspect CLI output for error messages.
+- **Export not found:** Confirm the export path in your config and check for errors in the sync output.
+- **Manual review required:** See `$DATA/manual_review.log` for links needing attention.
+

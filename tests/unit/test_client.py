@@ -22,7 +22,11 @@ def test_list_collections_and_rate_limit(monkeypatch):
         client.session,
         "get",
         lambda url: FakeResp(
-            headers={"X-RateLimit-Limit": "100", "X-RateLimit-Remaining": "99", "X-RateLimit-Reset": "123"}
+            headers={
+                "X-RateLimit-Limit": "100",
+                "X-RateLimit-Remaining": "99",
+                "X-RateLimit-Reset": "123",
+            }
         ),
     )
     result = client.list_collections()
