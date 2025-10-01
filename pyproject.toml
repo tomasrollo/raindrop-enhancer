@@ -4,4 +4,43 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+	"click",
+	"rich",
+	"requests",
+	"trafilatura",
+	"sqlmodel",
+	"toml",
+]
+
+[project.scripts]
+raindrop-enhancer = "raindrop_enhancer.cli.main:app"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+ruff = "^0.12"
+ 
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "C", "N", "B"]
+
+[tool.black]
+line-length = 88
+
+[tool.mypy]
+python_version = "3.13"
+check_untyped_defs = true
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-q"
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ruff>=0.13.2",
+]
