@@ -66,7 +66,9 @@ def run_full_sync(
             processed += 1
     if not dry_run:
         with export_path.open("w", encoding="utf-8") as f:
-            json.dump(_convert_datetimes(enriched_links), f, ensure_ascii=False, indent=2)
+            json.dump(
+                _convert_datetimes(enriched_links), f, ensure_ascii=False, indent=2
+            )
     # Update SyncRun
     now = datetime.now(UTC)
     run_id = sync_run_id or f"full-{now.isoformat()}"
@@ -107,7 +109,9 @@ def run_incremental_sync(
             processed += 1
     if not dry_run:
         with export_path.open("w", encoding="utf-8") as f:
-            json.dump(_convert_datetimes(enriched_links), f, ensure_ascii=False, indent=2)
+            json.dump(
+                _convert_datetimes(enriched_links), f, ensure_ascii=False, indent=2
+            )
     # Update SyncRun
     now = datetime.now(UTC)
     run_id = sync_run_id or f"incr-{now.isoformat()}"

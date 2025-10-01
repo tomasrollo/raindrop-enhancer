@@ -8,11 +8,14 @@ _Date: 2025-10-01_
 - Raindrop Test token or OAuth access token (see [Raindrop authentication docs](https://developer.raindrop.io/v1/authentication))
 - LLM tagging API credentials (HTTP JSON endpoint)
 
+
 ## 1. Clone & Environment Setup
 ```bash
 uv sync
 uv run python --version
 ```
+
+> **Note:** All CLI commands accept a global `--config <path>` option to specify the config file location. If omitted, the default is `$RAINDROP_ENHANCER_DATA/config.toml`.
 
 ## 2. Configure Data Directory
 ```bash
@@ -33,6 +36,7 @@ uv run raindrop-enhancer configure \
 ```
 - Creates `config.toml` with `0600` permissions inside data dir.
 
+
 ## 4. Run Full Sync (TDD Red → Green)
 1. Execute tests first (expected to fail until implementation completes):
    ```bash
@@ -44,15 +48,18 @@ uv run raindrop-enhancer configure \
    ```
 3. Execute full sync:
    ```bash
-   uv run raindrop-enhancer sync --mode full --json > sync-report.json
+   uv run raindrop-enhancer sync --mode full --json-output --config "$RAINDROP_ENHANCER_DATA/config.toml"
    ```
+   - Use `--dry-run` to test API fetches without writing outputs.
 4. Inspect generated JSON export in `$RAINDROP_ENHANCER_DATA/exports/latest.json`, verify tags/status fields, and confirm `rate_limit_remaining` / `rate_limit_reset` values reflect the documented 120-requests-per-minute window.
+
 
 ## 5. Incremental Sync
 ```bash
-uv run raindrop-enhancer sync --mode incremental --since last
+uv run raindrop-enhancer sync --mode incremental --since last --config "$RAINDROP_ENHANCER_DATA/config.toml"
 ```
 - Uses collection-level timestamps to fetch only updated links.
+- `--dry-run` is supported here as well.
 
 ## 6. Reprocess Specific Link
 ```bash
@@ -78,7 +85,10 @@ rm -rf "$RAINDROP_ENHANCER_DATA"/exports/*
 ```
 - On next run, CLI will prompt for new token or use `configure` command.
 
-## Troubleshooting
-- Rate limits: CLI automatically retries with exponential backoff up to 60s and reports Raindrop `X-RateLimit-*` headers; wait until `rate_limit_reset` before rerunning if exhausted.
-- Content extraction failures logged to `$DATA/manual_review.log`; reprocess after manual checks.
-- Use `--dry-run` to exercise API fetches without writing JSON export.
+
+## Rate Limit & Troubleshooting
+- **Rate limits:** The CLI automatically retries with exponential backoff up to 60s and reports Raindrop `X-RateLimit-*` headers. If you hit the 120-requests-per-minute limit, wait until `rate_limit_reset` before rerunning.
+- **Content extraction failures:** Logged to `$DATA/manual_review.log`; use `reprocess` after manual checks.
+- **Config file issues:** Ensure the config path is correct and permissions are 0600. Use `configure` to regenerate if needed.
+- **Token expired:** Delete or edit your config file and rerun `configure`.
+- **Dry run:** Use `--dry-run` to exercise API fetches without writing JSON export.

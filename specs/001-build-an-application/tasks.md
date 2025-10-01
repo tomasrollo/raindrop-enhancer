@@ -62,7 +62,8 @@
   _Depends on_: T021, T024
 
 ## Phase 3.5: Polish & Validation
-- [ ] T026 [P] Add supplemental unit tests (config manager, logging) and ensure overall coverage ≥90% via `uv run pytest --cov`.  
+- [X] T026 [P] Add supplemental unit tests (config manager, logging) and ensure overall coverage ≥90% via `uv run pytest --cov`.  
+  _Closed 2025-10-01_
   _Depends on_: T016, T023
 - [ ] T027 Update `README.md` and `specs/001-build-an-application/quickstart.md` with final CLI usage, rate-limit guidance, and troubleshooting.  
   _Depends on_: T022–T024
