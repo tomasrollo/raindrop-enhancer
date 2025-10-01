@@ -1,8 +1,8 @@
 
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Raindrop Link Enhancer CLI
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `001-build-an-application` | **Date**: 2025-10-01 | **Spec**: [/Users/tomas/Documents/projects/raindrop-enhancer/specs/001-build-an-application/spec.md](spec.md)
+**Input**: Feature specification from `/specs/001-build-an-application/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -31,34 +31,35 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-[Extract from feature spec: primary requirement + technical approach from research]
+Deliver a Python CLI that authenticates with the Raindrop API (using test tokens or OAuth access tokens), performs full and incremental synchronisation of all collections, respects the documented 120-requests-per-minute rate limit, enriches each link via an external LLM tagging API, and exports a deduplicated JSON dataset backed by SQLite for incremental tracking. The tool will use `click` for CLI orchestration, `rich` for progress and summaries, `requests` for API calls, `trafilatura` for content extraction, and maintain configuration (including the Raindrop token) in a permissions-restricted plaintext config file within the user-selected data directory.
 
 ## Technical Context
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.13 (uv-managed)  
+**Primary Dependencies**: click, rich, requests, trafilatura, sqlite3/SQLModel (or SQLAlchemy Core), pathlib, tenacity-style retry helper (in-house)  
+**Storage**: SQLite database in the chosen data directory plus JSON export and plaintext config file in same location  
+**Testing**: pytest with coverage enforcement, Click CliRunner contract tests, Raindrop/LLM client fakes, MyPy in strict mode  
+**Target Platform**: Cross-platform CLI (macOS & Linux focus)  
+**Project Type**: Single Python CLI project (`src/raindrop_enhancer`)  
+**Performance Goals**: p95 link processing <200ms, p99 <500ms; 10k-link full sync ≤60s; incremental sync <10s for ≤200 links; RSS ≤150MB  
+**Constraints**: Must respect Raindrop rate limit of 120 requests/minute by monitoring `X-RateLimit-*` headers and applying exponential backoff (1s→60s jitter); CLI requires `--json`, `--verbose`, `--quiet`, `--dry-run`; offline-safe replays for cached data; store Raindrop token only in config file with user-only permissions  
+**Scale/Scope**: Up to 10k links across 50 collections; incremental runs typically <200 links; future cron automation compatible
 
 ## Constitution Check
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*Initial Gate — PASS (2025-10-01)*
 
-The plan MUST explicitly address the following gates per the Constitution:
-- Code Quality: formatting, linting, typing strategy, complexity risks, docstrings for public APIs.
-- Testing Standards & TDD: test layers (unit/integration/contract), fail-first strategy, coverage expectations, determinism.
-- UX Consistency: CLI flags, IO contract (stdout/stderr/JSON), exit codes, compatibility considerations.
-- Performance & Efficiency: explicit targets (or defaults), benchmarks/perf tests to be added, profiling plan for heavy paths.
-- Tooling & Dependency Management: usage of uv for dependency ops, locking/sync, and `uv run` for execution.
+- **Code Quality**: Enforce Black/Ruff/MyPy via uv scripts; modules organised by domain/service/CLI to keep complexity manageable (<10); public APIs documented; dataclasses/TypedDicts for schemas; forbid dead code via Ruff checks.
+- **Testing Standards & TDD**: Contract tests (CLI JSON schema, Raindrop API requests), unit tests (storage, tagging, retry), integration tests (full and incremental sync) all scaffolded before implementation; coverage target 90/80 enforced; fixtures stub network to keep runs deterministic.
+- **UX Consistency**: CLI interface ensures `--help`, `--json`, `--verbose`, `--quiet`, `--dry-run`; output defaults human-readable with `rich`; errors go to stderr with exit codes; JSON export versioned for compatibility.
+- **Performance & Efficiency**: Adopt default performance goals plus 10k-link ≤60s objective; plan includes batching (pagination + LLM tag pooling) and asynchronous executor capped to avoid throttling; perf benchmark script scheduled.
+- **Tooling & Dependency Management**: All dependency operations via `uv add/remove/lock`; execution documented with `uv run`; quickstart instructs `uv sync`; lockfile to be checked in.
+
+No deviations requiring Complexity Tracking at this stage.
 
 ## Project Structure
 
 ### Documentation (this feature)
 ```
-specs/[###-feature]/
+specs/001-build-an-application/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
 ├── data-model.md        # Phase 1 output (/plan command)
@@ -68,104 +69,76 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+ios/ or android/
 <!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
+   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+   for this feature. Delete unused options and expand the chosen structure with
+   real paths (e.g., apps/admin, packages/something). The delivered plan must
+   not include Option labels.
 -->
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+├── raindrop_enhancer/
+│   ├── __init__.py
+│   ├── cli/
+│   │   └── main.py
+│   ├── api/
+│   │   ├── client.py
+│   │   └── models.py
+│   ├── services/
+│   │   ├── sync.py
+│   │   ├── tagging.py
+│   │   └── storage.py
+│   ├── domain/
+│   │   ├── entities.py
+│   │   └── repositories.py
+│   └── util/
+│       ├── config.py
+│       ├── logging.py
+│       └── retry.py
 
 tests/
-├── contract/
+├── unit/
+│   ├── test_storage.py
+│   ├── test_tagging.py
+│   └── test_retry.py
 ├── integration/
-└── unit/
+│   ├── test_full_sync.py
+│   └── test_incremental_sync.py
+└── contract/
+   ├── test_cli_contract.py
+   └── test_raindrop_api_contracts.py
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+scripts/
+└── perf/
+   └── benchmark_sync.py
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Single Python CLI project housed in `src/raindrop_enhancer` with layered modules (domain → services → CLI). Tests mirror production packages, and a dedicated `scripts/perf` directory hosts benchmark harnesses mandated by the constitution.
 
 ## Phase 0: Outline & Research
-1. **Extract unknowns from Technical Context** above:
-   - For each NEEDS CLARIFICATION → research task
-   - For each dependency → best practices task
-   - For each integration → patterns task
+Completed in `research.md` (2025-10-01). Key investigations and resulting decisions:
 
-2. **Generate and dispatch research agents**:
-   ```
-   For each unknown in Technical Context:
-     Task: "Research {unknown} for {feature context}"
-   For each technology choice:
-     Task: "Find best practices for {tech} in {domain}"
-   ```
+1. **Raindrop token storage** — validated plaintext config with restrictive permissions; documented rotation and cleanup operations and linked to Raindrop authentication docs for retrieving test tokens or OAuth credentials.
+2. **External LLM tagging API** — compared providers; selected HTTP JSON API with batch endpoint, cost guardrails, and mockable contract.
+3. **SQLite schema & performance** — designed tables/indexes for Raindrop IDs, collections, tag suggestions, sync runs; confirmed WAL mode and chunked transactions to meet 10k-link SLA.
+4. **Retry/backoff implementation** — specified jittered exponential helper aligning with FR-010; mapped to requests session adapter.
+5. **Rate limit compliance** — interpreted Raindrop docs: monitor `X-RateLimit-*` headers (limit 120/min), feed telemetry into sync summaries, and gate concurrent requests accordingly.
+6. **CLI UX using click + rich** — established patterns for mutually exclusive verbosity flags, JSON output mode bypassing rich progress, and summary reporting.
 
-3. **Consolidate findings** in `research.md` using format:
-   - Decision: [what was chosen]
-   - Rationale: [why chosen]
-   - Alternatives considered: [what else evaluated]
-
-**Output**: research.md with all NEEDS CLARIFICATION resolved
+Each research item follows Decision/Rationale/Alternatives template, eliminating remaining ambiguities.
 
 ## Phase 1: Design & Contracts
 *Prerequisites: research.md complete*
 
-1. **Extract entities from feature spec** → `data-model.md`:
-   - Entity name, fields, relationships
-   - Validation rules from requirements
-   - State transitions if applicable
+Artifacts created:
 
-2. **Generate API contracts** from functional requirements:
-   - For each user action → endpoint
-   - Use standard REST/GraphQL patterns
-   - Output OpenAPI/GraphQL schema to `/contracts/`
+1. **`data-model.md`** — documents entities (`LinkRecord`, `Collection`, `TagSuggestion`, `SyncRun`, `ConfigSettings`) with fields, types, normalization, indices, and lifecycle states (pending → processed → manual-review). Includes ER diagram outline and audit trail requirements.
+2. **Contracts** — `contracts/raindrop_api.yaml` (OpenAPI snippet for Raindrop endpoints + incremental filters) and `contracts/cli_commands.md` (CLI command/flag schema, exit codes, JSON output contract). Both paired with failing pytest stubs: `tests/contract/test_raindrop_api_contracts.py` & `test_cli_contract.py` (referenced in plan for Phase 2 tasks).
+3. **`quickstart.md`** — uv-based setup, running unit/contract/integration tests, executing full vs incremental sync, verifying JSON export schema, observing `rate_limit_remaining/reset` telemetry against the documented 120 req/min window, cleaning up config/token, and performing 1k-link performance smoke.
+4. **Agent context** — updated via `.specify/scripts/bash/update-agent-context.sh codex` to capture new dependencies and plan focus (SQLite, LLM tagging API, retry helper).
 
-3. **Generate contract tests** from contracts:
-   - One test file per endpoint
-   - Assert request/response schemas
-   - Tests must fail (no implementation yet)
-
-4. **Extract test scenarios** from user stories:
-   - Each story → integration test scenario
-   - Quickstart test = story validation steps
-
-5. **Update agent file incrementally** (O(1) operation):
-   - Run `.specify/scripts/bash/update-agent-context.sh codex`
-     **IMPORTANT**: Execute it exactly as specified above. Do not add or remove any arguments.
-   - If exists: Add only NEW tech from current plan
-   - Preserve manual additions between markers
-   - Update recent changes (keep last 3)
-   - Keep under 150 lines for token efficiency
-   - Output to repository root
-
-**Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
+Post-design constitution check re-confirmed PASS; no additional violations surfaced.
 
 ## Phase 2: Task Planning Approach
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
@@ -176,6 +149,7 @@ directories captured above]
 - Each contract → contract test task [P]
 - Each entity → model creation task [P] 
 - Each user story → integration test task
+- Add telemetry task to capture and persist `X-RateLimit-*` headers within `SyncRun` records and surface in CLI output.
 - Implementation tasks to make tests pass
 
 **Ordering Strategy**:
@@ -206,19 +180,19 @@ directories captured above]
 ## Progress Tracking
 *This checklist is updated during execution flow*
 
-**Phase Status**:
-- [ ] Phase 0: Research complete (/plan command)
-- [ ] Phase 1: Design complete (/plan command)
-- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
+- **Phase Status**:
+- [x] Phase 0: Research complete (/plan command)
+- [x] Phase 1: Design complete (/plan command)
+- [x] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
-- [ ] Initial Constitution Check: PASS
-- [ ] Post-Design Constitution Check: PASS
-- [ ] All NEEDS CLARIFICATION resolved
+- [x] Initial Constitution Check: PASS
+- [x] Post-Design Constitution Check: PASS
+- [x] All NEEDS CLARIFICATION resolved
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v1.0.0 - See `.specify/memory/constitution.md`*
+*Based on Constitution v1.1.0 - See `.specify/memory/constitution.md`*
