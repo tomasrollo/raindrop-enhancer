@@ -1,0 +1,4 @@
+data_dir = "/Users/tomas/.raindrop_enhancer"
+token_path = "config-token"
+tag_confidence_threshold = 0.6
+max_tags = 10
