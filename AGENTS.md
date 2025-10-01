@@ -12,7 +12,11 @@ tests/
 ```
 
 ## Commands
-cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] pytest [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] ruff check .
+uv run pytest - run tests
+uv run raindrop-enhancer - run the application
+uv add <package> - add python package to the application dependencies
+uv add --dev <package> - add python package as development dependency
+uv format - run code linter, formatter and checker, run it after every major code change
 
 ## Code Style
 Python 3.13 (uv-managed): Follow standard conventions
