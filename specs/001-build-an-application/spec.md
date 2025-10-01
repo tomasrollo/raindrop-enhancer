@@ -26,16 +26,20 @@ A knowledge worker who saves research links in Raindrop wants to export structur
 - **FR-001**: The CLI MUST prompt for or accept the Raindrop Test token issued via the Raindrop management console, verify it is valid before syncing, and prompt the user to re-enter a token if authentication fails.
 - **FR-002**: The system MUST retrieve all collections and associated links from the Raindrop API during an initial full sync.
 - **FR-003**: The system MUST persist downloaded link metadata (identifier, collection membership, URL, title, description, timestamps) in a local storage layer to support incremental processing.
+- **FR-003**: The system MUST persist downloaded link metadata (identifier, collection membership, URL, title, description, timestamps) in a SQLite database file stored in the user-selected data directory to support incremental processing and synchronization tracking.
 - **FR-004**: The system MUST fetch each link’s content using the `trafilatura` library (or equivalent content extraction) for links that have not yet been processed.
 - **FR-005**: The system MUST generate a set of suggested tags for each processed link based on extracted content and existing metadata.
+- **FR-005**: The system MUST generate a set of suggested tags for each processed link by calling an external LLM tagging API (paid) that analyzes the extracted content and existing metadata. The CLI MUST handle API errors gracefully and allow configuration of API credentials via the same local config file that stores the Raindrop token.
 - **FR-006**: The CLI MUST produce a JSON export containing link metadata, suggested tags, processing timestamp, and collection references, and update it after each sync.
 - **FR-007**: The system MUST support incremental sync operations that identify and process only links that are new or changed since the previous run.
+- **FR-007**: The system MUST support incremental sync operations that identify and process only links that are new or changed since the previous run by tracking the last sync timestamp per collection and fetching links whose Raindrop `lastUpdate` falls after that timestamp.
 - **FR-008**: Users MUST be able to specify the destination directory for local storage and JSON output.
 - **FR-009**: The CLI MUST provide clear progress output and summary reporting, including counts of processed links, skipped links, and encountered failures.
 - **FR-010**: The system MUST handle Raindrop API rate limits or errors gracefully by retrying with backoff and surfacing unresolved issues without aborting successful work.
+- **FR-010**: The system MUST handle Raindrop API rate limits or errors gracefully by retrying with exponential backoff starting at 1 second, doubling up to a maximum delay of 60 seconds, and applying jitter. After exhausting retries, unresolved issues must be surfaced without aborting successful work.
 - **FR-011**: The CLI MUST expose a way to reprocess a specific link or collection on demand without requiring a full resync.
 - **FR-012**: The system MUST log failures (e.g., content extraction errors) with enough detail for troubleshooting while keeping sensitive data secure.
-- **FR-012a**: The CLI MUST store the provided Raindrop Test token securely (e.g., encrypted on disk or in the OS keychain) and reuse it for subsequent runs unless the user supplies a new token.
+- **FR-012a**: The CLI MUST store the provided Raindrop Test token in a local plaintext config file alongside other settings within the user-selected data directory and reuse it for subsequent runs unless the user supplies a new token. The config file MUST be created with file permissions that restrict access to the current user and include a warning in the documentation about rotating or deleting the token file when necessary.
 - **FR-013**: The solution MUST allow users to configure the minimum confidence threshold or number of suggested tags generated per link.
 - **FR-014**: The system MUST maintain an audit trail of sync runs (timestamps, counts, duration) accessible via the CLI.
 - **FR-015**: The CLI MUST exit with a non-zero status code if critical failures prevent producing an updated JSON.
@@ -46,6 +50,16 @@ A knowledge worker who saves research links in Raindrop wants to export structur
 - **Link Record**: Represents a Raindrop item with fields for Raindrop ID, URL, title, description, collection IDs, original tags, processed timestamp, and enrichment status.
 - **Tag Suggestion**: Captures suggested tags per link, including tag text, confidence score, and the source (content analysis, metadata, existing tags).
 - **Sync Run**: Tracks an execution of the CLI with attributes such as run identifier, start/end time, mode (full vs incremental), number of processed/skipped links, failures, and output file path.
+
+---
+
+## Clarifications
+### Session 2025-10-01
+- Q: How should we persist the Raindrop Test token securely between runs? → A: Option C — store in a local plaintext config file alongside other settings.
+- Q: What strategy should the CLI use to generate suggested tags once link content is available? → A: Option C — call an external LLM tagging API (paid).
+- Q: How should incremental sync decide which links need reprocessing? → A: Option A — track last sync timestamp per collection and fetch links updated since then.
+- Q: What storage mechanism should the CLI use for local metadata and sync tracking? → A: Option A — SQLite database file in the data directory.
+- Q: Which retry/backoff strategy should the CLI follow when Raindrop API calls hit rate limits or transient errors? → A: Option A — exponential backoff starting at 1s, doubling up to 60s, with jitter.
 
 ---
 
