@@ -6,9 +6,9 @@
 ## Phase 3.1: Setup
 - [X] T001 Establish package layout under `src/raindrop_enhancer/` (create `__init__.py`, `cli/`, `api/`, `services/`, `domain/`, `util/`, and `scripts/perf/benchmark_sync.py` scaffolds) and add matching `tests/` package placeholders.  
   _Depends on_: —
-- [ ] T002 Update `pyproject.toml` using `uv add` to include runtime dependencies (`click`, `rich`, `requests`, `trafilatura`, `sqlmodel`, `tenacity`-style helper or equivalent) and register the CLI entry point `raindrop-enhancer=raindrop_enhancer.cli.main:app`.  
+- [X] T002 Update `pyproject.toml` using `uv add` to include runtime dependencies (`click`, `rich`, `requests`, `trafilatura`, `sqlmodel`, `tenacity`-style helper or equivalent) and register the CLI entry point `raindrop-enhancer=raindrop_enhancer.cli.main:app`.  
   _Depends on_: T001
-- [ ] T003 Configure linting/typing in `pyproject.toml` (Black, Ruff, MyPy strict settings, pytest coverage), add any supporting config files, and ensure `uv lock && uv sync` succeeds.  
+- [X] T003 Configure linting/typing in `pyproject.toml` (Black, Ruff, MyPy strict settings, pytest coverage), add any supporting config files, and ensure `uv lock && uv sync` succeeds.  
   _Depends on_: T002
 
 ## Phase 3.2: Tests First (must fail before implementation)
