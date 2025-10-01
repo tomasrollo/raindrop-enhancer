@@ -4,15 +4,19 @@ These follow the data-model.md specification: LinkRecord, Collection,
 TagSuggestion, SyncRun and ConfigSettings.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from sqlmodel import SQLModel, Field, Relationship
 
 
 class LinkCollectionLink(SQLModel, table=True):
-    link_id: Optional[int] = Field(default=None, foreign_key="linkrecord.id", primary_key=True)
-    collection_id: Optional[int] = Field(default=None, foreign_key="collection.id", primary_key=True)
+    link_id: Optional[int] = Field(
+        default=None, foreign_key="linkrecord.id", primary_key=True
+    )
+    collection_id: Optional[int] = Field(
+        default=None, foreign_key="collection.id", primary_key=True
+    )
 
 
 class LinkRecord(SQLModel, table=True):
@@ -28,7 +32,9 @@ class LinkRecord(SQLModel, table=True):
     processed_at: Optional[datetime] = None
     llm_version: Optional[str] = None
 
-    collections: List["Collection"] = Relationship(back_populates="links", link_model=LinkCollectionLink)
+    collections: List["Collection"] = Relationship(
+        back_populates="links", link_model=LinkCollectionLink
+    )
     tags: List["TagSuggestion"] = Relationship(back_populates="link")
 
 
@@ -40,7 +46,9 @@ class Collection(SQLModel, table=True):
     parent_id: Optional[str] = None
     last_sync_timestamp: Optional[datetime] = None
 
-    links: List[LinkRecord] = Relationship(back_populates="collections", link_model=LinkCollectionLink)
+    links: List[LinkRecord] = Relationship(
+        back_populates="collections", link_model=LinkCollectionLink
+    )
 
 
 class TagSuggestion(SQLModel, table=True):

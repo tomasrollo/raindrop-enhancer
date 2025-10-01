@@ -1,6 +1,12 @@
 Raindrop Enhancer
 
-See the project Constitution at `.specify/memory/constitution.md` for core principles, quality gates, and governance. All plans and tasks must comply with these standards.
+Small CLI to sync Raindrop links, enrich content, generate tag suggestions and write audited JSON exports.
+
+Quickstart
+
+- Install dependencies and create virtualenv with `uv sync`.
+- Configure the CLI with `uv run raindrop-enhancer configure --token "$RAINDROP_TOKEN" --data-dir "$HOME/.raindrop_enhancer"`.
+- Run a dry-run sync: `uv run raindrop-enhancer sync --mode full --dry-run --json`.
 
 Tooling
 

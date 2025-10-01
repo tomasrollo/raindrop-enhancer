@@ -31,35 +31,35 @@
   _Depends on_: T001
 
 ## Phase 3.3: Core Implementation (make tests pass in order)
-- [ ] T012 Implement SQLModel definitions for `LinkRecord` and link-collection association in `src/raindrop_enhancer/domain/entities.py`.  
+ - [X] T012 Implement SQLModel definitions for `LinkRecord` and link-collection association in `src/raindrop_enhancer/domain/entities.py`.  
   _Depends on_: T004–T011
-- [ ] T013 Implement SQLModel definitions for `Collection` and `ConfigSettings` in `src/raindrop_enhancer/domain/entities.py`.  
+ - [X] T013 Implement SQLModel definitions for `Collection` and `ConfigSettings` in `src/raindrop_enhancer/domain/entities.py`.  
   _Depends on_: T012
-- [ ] T014 Implement SQLModel definitions for `TagSuggestion` and `SyncRun` (with rate-limit fields) in `src/raindrop_enhancer/domain/entities.py`.  
+ - [X] T014 Implement SQLModel definitions for `TagSuggestion` and `SyncRun` (with rate-limit fields) in `src/raindrop_enhancer/domain/entities.py`.  
   _Depends on_: T013
-- [ ] T015 Build SQLite repository layer in `src/raindrop_enhancer/domain/repositories.py` (WAL setup, migrations, CRUD, incremental queries, audit logging).  
+ - [X] T015 Build SQLite repository layer in `src/raindrop_enhancer/domain/repositories.py` (WAL setup, migrations, CRUD, incremental queries, audit logging).  
   _Depends on_: T012–T014, T009
-- [ ] T016 Implement configuration manager in `src/raindrop_enhancer/util/config.py` (read/write `config.toml`, enforce `0600` permissions, expose thresholds).  
+ - [X] T016 Implement configuration manager in `src/raindrop_enhancer/util/config.py` (read/write `config.toml`, enforce `0600` permissions, expose thresholds).  
   _Depends on_: T013, T005, T009
-- [ ] T017 Implement retry/backoff helper in `src/raindrop_enhancer/util/retry.py` honoring Raindrop rate-limit headers and emitting telemetry hooks.  
+ - [X] T017 Implement retry/backoff helper in `src/raindrop_enhancer/util/retry.py` honoring Raindrop rate-limit headers and emitting telemetry hooks.  
   _Depends on_: T011
-- [ ] T018 Implement Raindrop API client in `src/raindrop_enhancer/api/client.py` (collections & raindrops endpoints, pagination, header capture, auth).  
+ - [X] T018 Implement Raindrop API client in `src/raindrop_enhancer/api/client.py` (collections & raindrops endpoints, pagination, header capture, auth).  
   _Depends on_: T015, T017, T004
-- [ ] T019 Implement tagging adapter in `src/raindrop_enhancer/services/tagging.py` (LLM batch requests, retries, confidence threshold, error tagging).  
+ - [X] T019 Implement tagging adapter in `src/raindrop_enhancer/services/tagging.py` (LLM batch requests, retries, confidence threshold, error tagging).  
   _Depends on_: T010, T017
-- [ ] T020 Implement content extraction + enrichment helpers in `src/raindrop_enhancer/services/sync.py` (trafilatura fetch, metadata merge, manual-review flagging).  
+ - [X] T020 Implement content extraction + enrichment helpers in `src/raindrop_enhancer/services/sync.py` (trafilatura fetch, metadata merge, manual-review flagging).  
   _Depends on_: T015, T018, T019, T006
-- [ ] T021 Wire incremental/full/reprocess orchestration in `src/raindrop_enhancer/services/sync.py` (detect new links, dedupe, update SyncRun, write JSON export).  
+ - [X] T021 Wire incremental/full/reprocess orchestration in `src/raindrop_enhancer/services/sync.py` (detect new links, dedupe, update SyncRun, write JSON export).  
   _Depends on_: T020, T007, T008
-- [ ] T022 Implement CLI commands in `src/raindrop_enhancer/cli/main.py` (configure, sync, reprocess, status, global options, rich output) and register `app` entry.  
+ - [X] T022 Implement CLI commands in `src/raindrop_enhancer/cli/main.py` (configure, sync, reprocess, status, global options, rich output) and register `app` entry.  
   _Depends on_: T016, T021, T005
 
 ## Phase 3.4: Integration & Performance
-- [ ] T023 Integrate structured logging & metrics in `src/raindrop_enhancer/util/logging.py` and surface rate-limit telemetry in CLI summaries.  
+ - [X] T023 Integrate structured logging & metrics in `src/raindrop_enhancer/util/logging.py` and surface rate-limit telemetry in CLI summaries.  
   _Depends on_: T022
-- [ ] T024 Complete JSON export writer and schema versioning in `src/raindrop_enhancer/services/storage.py` (ensure idempotent updates).  
+ - [X] T024 Complete JSON export writer and schema versioning in `src/raindrop_enhancer/services/storage.py` (ensure idempotent updates).  
   _Depends on_: T021
-- [ ] T025 Implement performance benchmark in `scripts/perf/benchmark_sync.py` targeting 1k-link fixture and report against 60s SLA.  
+ - [X] T025 Implement performance benchmark in `scripts/perf/benchmark_sync.py` targeting 1k-link fixture and report against 60s SLA.  
   _Depends on_: T021, T024
 
 ## Phase 3.5: Polish & Validation

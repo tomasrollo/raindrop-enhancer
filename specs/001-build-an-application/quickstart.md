@@ -24,14 +24,13 @@ chmod 700 "$RAINDROP_ENHANCER_DATA"
 ## 3. First-Time Configuration
 ```bash
 uv run raindrop-enhancer configure \
-  --token "$RAINDROP_TOKEN" \
-  --data-dir "$RAINDROP_ENHANCER_DATA" \
-  --llm-api-base "https://api.example.com/tag" \
-  --llm-api-key "$LLM_API_KEY" \
-  --tag-threshold 0.6 \
-  --max-tags 10
+   --token "$RAINDROP_TOKEN" \
+   --data-dir "$RAINDROP_ENHANCER_DATA" \
+   --llm-api-base "https://api.example.com/tag" \
+   --llm-api-key "$LLM_API_KEY"
 ```
-- Creates `config.toml` with `0600` permissions inside data dir.
+
+The command writes a `config.toml` in the data directory and (on POSIX) attempts to set `0600` permissions.
 
 ## 4. Run Full Sync (TDD Red → Green)
 1. Execute tests first (expected to fail until implementation completes):
@@ -42,7 +41,7 @@ uv run raindrop-enhancer configure \
    ```bash
    uv run pytest
    ```
-3. Execute full sync:
+3. Execute full sync (dry-run recommended first):
    ```bash
    uv run raindrop-enhancer sync --mode full --json > sync-report.json
    ```
@@ -69,7 +68,7 @@ uv run raindrop-enhancer status --json
 ```bash
 uv run python scripts/perf/benchmark_sync.py --fixtures fixtures/links_1k.json
 ```
-- Ensure run completes within 6 seconds (10% of 60s budget).
+- By default the included benchmark script runs a smaller fixture; to run a 1k fixture and assert a 60s SLA, pass a fixtures file or adjust the script parameters. See `scripts/perf/benchmark_sync.py`.
 
 ## 9. Cleanup / Token Rotation
 ```bash
