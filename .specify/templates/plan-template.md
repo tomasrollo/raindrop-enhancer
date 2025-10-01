@@ -11,7 +11,7 @@
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
    → Detect Project Type from file system structure or context (web=frontend+backend, mobile=app+api)
    → Set Structure Decision based on project type
-3. Fill the Constitution Check section based on the content of the constitution document.
+3. Fill the Constitution Check section based on `.specify/memory/constitution.md`.
 4. Evaluate Constitution Check section below
    → If violations exist: Document in Complexity Tracking
    → If no justification possible: ERROR "Simplify approach first"
@@ -47,7 +47,12 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+The plan MUST explicitly address the following gates per the Constitution:
+- Code Quality: formatting, linting, typing strategy, complexity risks, docstrings for public APIs.
+- Testing Standards & TDD: test layers (unit/integration/contract), fail-first strategy, coverage expectations, determinism.
+- UX Consistency: CLI flags, IO contract (stdout/stderr/JSON), exit codes, compatibility considerations.
+- Performance & Efficiency: explicit targets (or defaults), benchmarks/perf tests to be added, profiling plan for heavy paths.
+- Tooling & Dependency Management: usage of uv for dependency ops, locking/sync, and `uv run` for execution.
 
 ## Project Structure
 
@@ -216,4 +221,4 @@ directories captured above]
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Constitution v1.0.0 - See `.specify/memory/constitution.md`*

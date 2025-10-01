@@ -1,50 +1,93 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: 1.0.0 → 1.1.0
+Modified principles: (no title changes)
+Added sections:
+ - Tooling & Dependency Management (uv standardization)
+ - Documentation & Release Standards (expanded with tooling note)
+Removed sections:
+ - None
+Templates requiring updates:
+ - .specify/templates/plan-template.md ✅ updated (Constitution Check includes uv usage)
+ - .specify/templates/tasks-template.md ✅ updated (Setup and validation reference uv)
+ - .specify/templates/spec-template.md ✅ reviewed (no change needed)
+ - README.md ✅ updated (constitution link + uv note)
+Follow-up TODOs:
+ - None
+-->
+
+# Raindrop Enhancer Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality Discipline
+Non-negotiable rules:
+- Code MUST pass formatting and linting in CI using Black (format), Ruff (lint), and conventional import/order rules.
+- Static typing with MyPy is REQUIRED for all modules; disallow implicit Any. Exemptions MUST be local with a comment and an issue link.
+- Complexity limits: per-function cyclomatic complexity ≤ 10; files ≥ 500 lines REQUIRE justification in the PR description.
+- No dead code or unused dependencies; public APIs MUST include docstrings with usage examples.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Rationale: Consistent style, static guarantees, and bounded complexity keep the codebase maintainable and reviewable over time.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Testing Standards & TDD
+Non-negotiable rules:
+- Tests MUST be written before implementation for new behavior (Red → Green → Refactor cycle enforced).
+- Test layers: unit tests for logic, integration tests for IO/boundaries, and contract tests when external APIs or CLIs are exposed.
+- Coverage thresholds: lines ≥ 90% and branches ≥ 80% on changed code; overall coverage MUST not decrease.
+- Tests MUST be deterministic and fast: unit tests run without network or real external services; use fakes/mocks; each test completes in < 2s.
+- CI is a hard gate: failing tests or insufficient coverage block merges.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Rationale: TDD and strong coverage produce reliable, evolvable features and prevent regressions.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. User Experience Consistency
+Non-negotiable rules:
+- CLI commands MUST provide --help, consistent flag names (kebab-case), and support --verbose, --quiet, and --dry-run where applicable.
+- IO contract: human-readable text to stdout by default; machine-readable JSON via --json; errors to stderr with stable exit codes.
+- Defaults favor safety and idempotency; messages and prompts follow a consistent tone and structure.
+- Backward compatibility is REQUIRED for user-facing flags and output fields; breaking changes require a MAJOR release and a deprecation window.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: Predictable interfaces reduce user friction and support scripting/automation.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Performance & Efficiency
+Non-negotiable rules:
+- Each feature plan MUST declare explicit performance goals. If unspecified, apply defaults: p95 latency < 200ms per core operation, p99 < 500ms; peak RSS ≤ 150MB for typical workloads.
+- Core flows MUST include a performance test or benchmark; regressions > 10% require explicit approval and a follow-up optimization task.
+- Batch operations MUST handle at least 10k items in ≤ 60s by default, or document domain-specific targets.
+- Substantive changes implicated in > 5% CPU or memory use MUST be profiled and have findings documented in the PR.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Rationale: Guardrails ensure responsiveness and prevent performance drift as features evolve.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Quality Gates & Workflow
+
+- Pre-merge gates in CI: format (Black), lint (Ruff), types (MyPy), tests (pytest), coverage enforcement, and performance checks for impacted paths.
+- Definition of Done includes: updated docs (--help output snapshots and README sections), changelog entry, and constitution compliance checklist.
+- PRs MUST document any deviations from principles with a justification and link to follow-up tasks.
+
+## Documentation & Release Standards
+
+- User-facing documentation MUST be updated alongside code changes that alter behavior or flags.
+- Semantic Versioning (SemVer) governs releases; breaking changes require MAJOR bump and a migration note.
+- Release notes MUST summarize behavior changes, performance impacts, and any deprecations.
+
+## Tooling & Dependency Management
+
+- The project MUST use uv for package, dependency, and build management.
+	- Dependency add/update: `uv add/remove`, lock with `uv lock`, sync with `uv sync`.
+	- Execution: `uv run <cmd>` is the canonical way to run tools and project entry points.
+	- Python version and project metadata live in `pyproject.toml`; uv-managed virtualenvs MUST be used.
+	- CLI entry points SHOULD be defined in `[project.scripts]` and runnable via `uv run`.
+- Lockfiles MUST be kept up to date and committed as required by repository policy (use `uv lock`/`uv export` per workflow).
+- CI pipelines MUST install and use uv to reproduce environments and run checks.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This Constitution supersedes other practices when conflicts arise.
+- Amendments: open a PR labeled governance with a summary of changes, rationale, version bump type (MAJOR/MINOR/PATCH), and migration guidance if applicable.
+- Versioning policy for this document follows SemVer:
+	- MAJOR: backward-incompatible governance or principle redefinitions/removals.
+	- MINOR: new principles/sections or materially expanded guidance.
+	- PATCH: clarifications and non-semantic edits.
+- Ratification: at least one maintainer approval required; merge records the new version and updates dates.
+- Compliance: code reviews MUST verify principle adherence; CI enforces gates. Non-compliance requires either remediation before merge or an approved, time-bound exception with tracking.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.1.0 | **Ratified**: 2025-10-01 | **Last Amended**: 2025-10-01
