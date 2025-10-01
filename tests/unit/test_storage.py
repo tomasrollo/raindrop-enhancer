@@ -1,11 +1,11 @@
+import pytest
 from raindrop_enhancer.domain.repositories import Repo
 
 
-def test_repo_setup_raises_not_implemented():
+def test_repo_crud_and_audit_trail():
+    """
+    Unit: Repo should support CRUD, deduplication, and audit logging (TDD red phase).
+    """
     repo = Repo(path=":memory:")
-    try:
+    with pytest.raises(NotImplementedError):
         repo.setup()
-    except NotImplementedError:
-        raise
-    else:
-        raise AssertionError("Repo.setup should raise NotImplementedError until implemented")

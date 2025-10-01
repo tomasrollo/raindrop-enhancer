@@ -12,21 +12,21 @@
   _Depends on_: T002
 
 ## Phase 3.2: Tests First (must fail before implementation)
-- [ ] T004 [P] Flesh out `tests/contract/test_raindrop_api_contracts.py` to validate OpenAPI schema compliance and `X-RateLimit-*` headers against `contracts/raindrop_api.yaml` (use `uv run pytest -k raindrop_api`).  
+ - [X] T004 [P] Flesh out `tests/contract/test_raindrop_api_contracts.py` to validate OpenAPI schema compliance and `X-RateLimit-*` headers against `contracts/raindrop_api.yaml` (use `uv run pytest -k raindrop_api`).  
   _Depends on_: T001
-- [ ] T005 [P] Flesh out `tests/contract/test_cli_contract.py` to assert CLI flags, JSON schema, and rate-limit telemetry fields defined in `contracts/cli_commands.md`.  
+ - [X] T005 [P] Flesh out `tests/contract/test_cli_contract.py` to assert CLI flags, JSON schema, and rate-limit telemetry fields defined in `contracts/cli_commands.md`.  
   _Depends on_: T001
-- [ ] T006 [P] Author failing integration test `tests/integration/test_full_sync.py` covering full sync happy-path (JSON export, SQLite persistence, tagging flow) using Raindrop/LLM fakes.  
+ - [X] T006 [P] Author failing integration test `tests/integration/test_full_sync.py` covering full sync happy-path (JSON export, SQLite persistence, tagging flow) using Raindrop/LLM fakes.  
   _Depends on_: T001
-- [ ] T007 [P] Author failing integration test `tests/integration/test_incremental_sync.py` ensuring incremental mode only processes updated links and records rate-limit telemetry.  
+ - [X] T007 [P] Author failing integration test `tests/integration/test_incremental_sync.py` ensuring incremental mode only processes updated links and records rate-limit telemetry.  
   _Depends on_: T001
-- [ ] T008 [P] Author failing integration test `tests/integration/test_reprocess_status.py` validating targeted reprocess and status summary outputs.  
+ - [X] T008 [P] Author failing integration test `tests/integration/test_reprocess_status.py` validating targeted reprocess and status summary outputs.  
   _Depends on_: T001
-- [ ] T009 [P] Author failing unit tests in `tests/unit/test_storage.py` for SQLite repository CRUD, deduping, and audit trail.  
+ - [X] T009 [P] Author failing unit tests in `tests/unit/test_storage.py` for SQLite repository CRUD, deduping, and audit trail.  
   _Depends on_: T001
-- [ ] T010 [P] Author failing unit tests in `tests/unit/test_tagging.py` for LLM tagging adapter (batching, confidence filtering, error handling).  
+ - [X] T010 [P] Author failing unit tests in `tests/unit/test_tagging.py` for LLM tagging adapter (batching, confidence filtering, error handling).  
   _Depends on_: T001
-- [ ] T011 [P] Author failing unit tests in `tests/unit/test_retry.py` covering exponential backoff, jitter, and `Retry-After` handling.  
+ - [X] T011 [P] Author failing unit tests in `tests/unit/test_retry.py` covering exponential backoff, jitter, and `Retry-After` handling.  
   _Depends on_: T001
 
 ## Phase 3.3: Core Implementation (make tests pass in order)

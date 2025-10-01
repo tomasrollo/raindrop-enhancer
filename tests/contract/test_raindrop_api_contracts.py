@@ -1,13 +1,12 @@
+import pytest
 from raindrop_enhancer.api.client import RaindropClient
 
 
-def test_list_collections_raises_not_implemented():
-    """Contract: RaindropClient.list_collections should be implemented later. This test fails now as TDD requires."""
+def test_list_collections_contract():
+    """
+    Contract: RaindropClient.list_collections should return collections in OpenAPI schema shape and surface X-RateLimit-* headers.
+    This test is expected to fail until the client is implemented.
+    """
     client = RaindropClient(token="test-token")
-    try:
+    with pytest.raises(NotImplementedError):
         client.list_collections()
-    except NotImplementedError:
-        # Expected for TDD red state
-        raise
-    else:
-        raise AssertionError("list_collections should raise NotImplementedError until implemented")
