@@ -1,4 +1,3 @@
-
 # Implementation Plan: Raindrop Link Enhancer CLI
 
 **Branch**: `001-build-an-application` | **Date**: 2025-10-01 | **Spec**: [/Users/tomas/Documents/projects/raindrop-enhancer/specs/001-build-an-application/spec.md](spec.md)
@@ -196,3 +195,31 @@ Post-design constitution check re-confirmed PASS; no additional violations surfa
 
 ---
 *Based on Constitution v1.1.0 - See `.specify/memory/constitution.md`*
+
+# Final validation (T028) — 2025-10-01
+
+Validation steps executed:
+
+- Full test suite: `uv run pytest -q` — ALL TESTS PASSED (unit, integration, contract).
+- Coverage: `uv run pytest --cov -q` — TOTAL COVERAGE 90% (meets T026 requirement).
+- CLI dry-run sync: `uv run raindrop-enhancer sync --mode full --dry-run --json --data-dir ./.tmp_test_data`
+
+Observed CLI sync structured log (example):
+
+{"message": "sync.complete", "run_id": "1205edda-cc61-44b4-a777-31c1f456fa59", "processed": 0, "export_count": 0, "duration_seconds": 2.119412, "rate_limit": {"limit": null, "remaining": null, "reset": null}}
+
+CLI-returned summary (example):
+
+{"run_id": "1205edda-cc61-44b4-a777-31c1f456fa59", "started_at": "2025-10-01T11:24:39.213535+00:00", "completed_at": "2025-10-01T11:24:41.332947+00:00", "duration_seconds": 2.119412, "processed": 0, "export_count": 0, "rate_limit": {"limit": null, "remaining": null, "reset": null}}
+
+Notes:
+
+- Coverage run emitted ResourceWarning messages about unclosed SQLite connections during tests. They don't fail CI but indicate some sessions/connections may not be closed cleanly in tests.
+- The dry-run completed successfully and the repo persisted a `SyncRun` record where available.
+
+Validation status: PASS — tests and coverage target satisfied.
+
+Next recommended steps:
+
+- Add a small test or cleanup step to ensure SQLModel sessions are closed to silence ResourceWarnings.
+- Run the performance benchmark with a 1k-link fixture and assert the 60s SLA; I can parameterize the benchmark script to accept the fixture/size if you'd like.
