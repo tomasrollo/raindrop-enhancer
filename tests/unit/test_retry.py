@@ -52,3 +52,47 @@ def test_backoff_uses_full_jitter(monkeypatch):
     retry.backoff(attempt=3, base=1.0, cap=60.0)
 
     assert calls == [(0, 8.0)]
+
+
+def test_retry_retries_on_retryable_error(monkeypatch):
+    attempts: list[int] = []
+    events: list[retry.RetryEvent] = []
+
+    def operation() -> str:
+        attempts.append(len(attempts))
+        if len(attempts) < 3:
+            raise retry.RetryableError(
+                "temporary",
+                retry_after=None,
+                context={"component": "test"},
+            )
+        return "success"
+
+    monkeypatch.setattr(retry, "time", SimpleNamespace(sleep=lambda _delay: None))
+
+    result = retry.retry(operation, on_retry=events.append)
+
+    assert result == "success"
+    assert len(attempts) == 3
+    assert len(events) == 2
+    assert events[0].context["component"] == "test"
+
+
+def test_retry_raises_after_exhausting_attempts(monkeypatch):
+    monkeypatch.setattr(retry, "time", SimpleNamespace(sleep=lambda _delay: None))
+
+    def operation() -> None:
+        raise retry.RetryableError("always failing", retry_after=0.1)
+
+    with pytest.raises(retry.RetryableError):
+        retry.retry(operation, attempts=2)
+
+
+def test_retry_bubbles_non_retryable_errors(monkeypatch):
+    monkeypatch.setattr(retry, "time", SimpleNamespace(sleep=lambda _delay: None))
+
+    def operation() -> None:
+        raise ValueError("boom")
+
+    with pytest.raises(ValueError):
+        retry.retry(operation)

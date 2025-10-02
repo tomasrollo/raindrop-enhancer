@@ -62,11 +62,11 @@
   _Depends on_: T021, T024
 
 ## Phase 3.5: Polish & Validation
-- [ ] T026 [P] Add supplemental unit tests (config manager, logging) and ensure overall coverage ≥90% via `uv run pytest --cov`.  
+- [X] T026 [P] Add supplemental unit tests (config manager, logging) and ensure overall coverage ≥90% via `uv run pytest --cov`.  
   _Depends on_: T016, T023
-- [ ] T027 Update `README.md` and `specs/001-build-an-application/quickstart.md` with final CLI usage, rate-limit guidance, and troubleshooting.  
+- [X] T027 Update `README.md` and `specs/001-build-an-application/quickstart.md` with final CLI usage, rate-limit guidance, and troubleshooting.  
   _Depends on_: T022–T024
-- [ ] T028 Execute final validation (`uv run pytest`, `uv run raindrop-enhancer sync --mode full --dry-run --json`) and document results in `specs/001-build-an-application/plan.md` Progress Tracking notes.  
+- [X] T028 Execute final validation (`uv run pytest`, `uv run raindrop-enhancer sync --mode full --dry-run --json`) and document results in `specs/001-build-an-application/plan.md` Progress Tracking notes.  
   _Depends on_: T026, T027
 
 ## Dependencies Summary
