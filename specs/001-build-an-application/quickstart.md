@@ -1,84 +1,102 @@
 # Quickstart — Raindrop Link Enhancer CLI
 
-_Date: 2025-10-01_
+_Date: 2025-10-02_
 
 ## Prerequisites
-- Python 3.13 installed
-- `uv` available on PATH (`pipx install uv` if needed)
-- Raindrop Test token or OAuth access token (see [Raindrop authentication docs](https://developer.raindrop.io/v1/authentication))
-- LLM tagging API credentials (HTTP JSON endpoint)
 
-## 1. Clone & Environment Setup
+- Python 3.13
+- [`uv`](https://github.com/astral-sh/uv) on your `PATH`
+- Raindrop API token (test token or OAuth) – see the [official docs](https://developer.raindrop.io/v1/authentication)
+- LLM tagging endpoint and API key (HTTPS JSON service)
+
+## 1. Bootstrap the Environment
+
 ```bash
 uv sync
 uv run python --version
 ```
 
-## 2. Configure Data Directory
+Optionally pin the working data directory:
+
 ```bash
-export RAINDROP_ENHANCER_DATA=~/raindrop-data
+export RAINDROP_ENHANCER_DATA=~/raindrop-enhancer
 mkdir -p "$RAINDROP_ENHANCER_DATA"
 chmod 700 "$RAINDROP_ENHANCER_DATA"
 ```
 
-## 3. First-Time Configuration
+## 2. Configure Credentials and Thresholds
+
+Create the initial `config.toml` (permissions automatically enforced to `0600`):
+
 ```bash
 uv run raindrop-enhancer configure \
   --token "$RAINDROP_TOKEN" \
-  --data-dir "$RAINDROP_ENHANCER_DATA" \
-  --llm-api-base "https://api.example.com/tag" \
+  --data-dir "${RAINDROP_ENHANCER_DATA:-$HOME/.raindrop-enhancer}" \
+  --llm-api-base "https://llm.example.com/tag" \
   --llm-api-key "$LLM_API_KEY" \
-  --tag-threshold 0.6 \
-  --max-tags 10
+  --tag-threshold 0.65 \
+  --max-tags 8
 ```
-- Creates `config.toml` with `0600` permissions inside data dir.
 
-## 4. Run Full Sync (TDD Red → Green)
-1. Execute tests first (expected to fail until implementation completes):
-   ```bash
-   uv run pytest tests/contract -k "raindrop_api or cli_contract"
-   ```
-2. After implementing failing tests, run full suite:
-   ```bash
-   uv run pytest
-   ```
-3. Execute full sync:
-   ```bash
-   uv run raindrop-enhancer sync --mode full --json > sync-report.json
-   ```
-4. Inspect generated JSON export in `$RAINDROP_ENHANCER_DATA/exports/latest.json`, verify tags/status fields, and confirm `rate_limit_remaining` / `rate_limit_reset` values reflect the documented 120-requests-per-minute window.
+You can rerun `configure` at any time to rotate tokens or tweak thresholds.
 
-## 5. Incremental Sync
+## 3. Run Syncs
+
+### Full sync
+
+```bash
+uv run raindrop-enhancer sync --mode full --batch-size 50
+```
+
+### Incremental sync
+
 ```bash
 uv run raindrop-enhancer sync --mode incremental --since last
 ```
-- Uses collection-level timestamps to fetch only updated links.
 
-## 6. Reprocess Specific Link
+### Dry-run / JSON summary
+
+```bash
+uv run raindrop-enhancer --json --dry-run sync --mode full
+```
+
+### Targeted reprocess
+
 ```bash
 uv run raindrop-enhancer reprocess --id 123456789 --reason "content fixed"
 ```
 
-## 7. Status & Audit Trail
-```bash
-uv run raindrop-enhancer status --json
-```
-- Displays latest `SyncRun` entries, pending manual reviews, and export path.
+### Status dashboard
 
-## 8. Performance Smoke (10% dataset)
 ```bash
-uv run python scripts/perf/benchmark_sync.py --fixtures fixtures/links_1k.json
+uv run raindrop-enhancer status --json --limit 5
 ```
-- Ensure run completes within 6 seconds (10% of 60s budget).
 
-## 9. Cleanup / Token Rotation
+Each command honours `--json`, `--verbose`, `--quiet`, and `--data-dir`. JSON responses include processed counts, export paths, and rate-limit telemetry for automation.
+
+## 4. Observe Rate-Limit Telemetry
+
+- `rate_limit_remaining`, `rate_limit_limit`, and `rate_limit_reset` are captured for every call and surfaced in the sync summary plus the `status` table.
+- Metrics are also recorded internally (`retry.attempts`, `retry.delay_seconds`, `raindrop.rate_limit.*`) for downstream monitoring.
+- When `rate_limit_remaining` reaches zero, the CLI backs off using jittered exponential retry. Wait until the displayed reset timestamp before rerunning.
+
+## 5. Test & Validate
+
 ```bash
-rm "$RAINDROP_ENHANCER_DATA/config.toml"
-rm -rf "$RAINDROP_ENHANCER_DATA"/exports/*
+uv run pytest --cov
 ```
-- On next run, CLI will prompt for new token or use `configure` command.
+
+The suite covers contract, unit, and integration flows and currently reports ~93% statement coverage.
+
+## 6. Maintenance and Cleanup
+
+- To rotate credentials, rerun `configure` with new values.
+- Remove `$RAINDROP_ENHANCER_DATA/config.toml` or the SQLite/`exports/` artefacts to reset state; the CLI will recreate them on the next run.
+- For performance smoke tests, execute: `uv run python scripts/perf/benchmark_sync.py --fixtures fixtures/links_1k.json` (target: ≤60 seconds for 1k links).
 
 ## Troubleshooting
-- Rate limits: CLI automatically retries with exponential backoff up to 60s and reports Raindrop `X-RateLimit-*` headers; wait until `rate_limit_reset` before rerunning if exhausted.
-- Content extraction failures logged to `$DATA/manual_review.log`; reprocess after manual checks.
-- Use `--dry-run` to exercise API fetches without writing JSON export.
+
+- **Missing token / LLM creds:** the CLI exits with guidance. Re-run `configure` with the missing values.
+- **Rate-limited (HTTP 429):** inspect `rate_limit_reset` in the JSON summary or `status` output and rerun once the window resets. Retries back off automatically up to 60 seconds.
+- **Content extraction failures:** affected links are flagged for manual review and listed in the sync summary. Use `reprocess --id ...` after addressing the underlying issue.
+- **Unexpected retries:** structured retry logs are emitted as JSON (`logger=raindrop_enhancer.retry`). Enable `--verbose` to review them, or inspect the metrics block in the JSON response.

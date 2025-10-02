@@ -11,6 +11,7 @@ dependencies = [
 	"trafilatura",
 	"sqlmodel",
 	"toml",
+	"pytest-cov>=7.0.0",
 ]
 
 [project.scripts]
@@ -46,5 +47,6 @@ testpaths = ["tests"]
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
+    "pyyaml>=6.0.3",
     "ruff>=0.13.2",
 ]
