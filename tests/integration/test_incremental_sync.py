@@ -76,6 +76,7 @@ class IncrementalRaindropClient:
 
     def _headers(self) -> dict[str, str]:
         return {
+            "X-RateLimit-Limit": "120",
             "X-RateLimit-Remaining": str(self.rate_limit_remaining),
             "X-RateLimit-Reset": str(self.rate_limit_reset),
         }
@@ -144,6 +145,9 @@ def test_incremental_sync_only_processes_updates(tmp_path):
     assert summary["processed"] == 2  # one new + one updated existing
     assert summary["skipped"] == 0
     assert summary["rate_limit_remaining"] == incremental_client.rate_limit_remaining
+    assert summary["rate_limit_limit"] == int(
+        incremental_client._headers()["X-RateLimit-Limit"]
+    )
 
     # Ensure lastUpdate filter applied
     assert incremental_client.last_update_params[-1] is not None

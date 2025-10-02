@@ -9,6 +9,7 @@ import requests
 from requests.structures import CaseInsensitiveDict
 
 from raindrop_enhancer.util import retry
+from raindrop_enhancer.util.logging import log_retry_event
 
 RATE_LIMIT_HEADERS = {
     "X-RateLimit-Limit",
@@ -134,7 +135,7 @@ class RaindropClient:
 
         payload, headers = retry.retry(
             _do_request,
-            on_retry=self._on_retry,
+            on_retry=self._on_retry or log_retry_event,
         )
         return payload, headers
 

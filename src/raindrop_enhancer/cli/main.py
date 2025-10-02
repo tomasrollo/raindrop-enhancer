@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +18,11 @@ from raindrop_enhancer.api.client import RaindropClient
 from raindrop_enhancer.services import sync as sync_service
 from raindrop_enhancer.services.tagging import TaggingService
 from raindrop_enhancer.util.config import ConfigManager, resolve_data_dir
+from raindrop_enhancer.util.logging import (
+    configure_logging,
+    get_metrics,
+    log_retry_event,
+)
 
 
 console = Console()
@@ -91,8 +97,9 @@ def perform_sync(
         batch_size=batch_size,
         confidence_threshold=state.tag_confidence_threshold,
         max_tags=state.max_tags,
+        on_retry=log_retry_event,
     )
-    client = RaindropClient(token)
+    client = RaindropClient(token, on_retry=log_retry_event)
 
     try:
         kwargs = {
@@ -146,6 +153,13 @@ def app(
 
     if verbose and quiet:
         raise click.UsageError("--verbose and --quiet are mutually exclusive")
+
+    level = logging.INFO
+    if verbose:
+        level = logging.DEBUG
+    elif quiet:
+        level = logging.ERROR
+    configure_logging(level)
 
     ctx.obj = CLIContext(
         json_output=json_output,
@@ -275,6 +289,7 @@ def sync(
 
     if ctx.json_output:
         click.echo(json.dumps(summary, default=_json_default))
+        get_metrics().clear()
     else:
         _render_sync_summary(summary)
 
@@ -309,8 +324,9 @@ def reprocess(ctx: CLIContext, raindrop_id: int, reason: str | None) -> None:
         batch_size=25,
         confidence_threshold=state.tag_confidence_threshold,
         max_tags=state.max_tags,
+        on_retry=log_retry_event,
     )
-    client = RaindropClient(state.raindrop_token)
+    client = RaindropClient(state.raindrop_token, on_retry=log_retry_event)
 
     try:
         summary = sync_service.run_reprocess(
@@ -329,6 +345,7 @@ def reprocess(ctx: CLIContext, raindrop_id: int, reason: str | None) -> None:
 
     if ctx.json_output:
         click.echo(json.dumps(summary, default=_json_default))
+        get_metrics().clear()
     else:
         _render_reprocess_summary(summary)
 
@@ -368,7 +385,22 @@ def _render_sync_summary(summary: dict[str, Any]) -> None:
     details.add_row(
         "Rate limit remaining", str(summary.get("rate_limit_remaining", "-"))
     )
+    if "rate_limit_limit" in summary:
+        details.add_row("Rate limit limit", str(summary.get("rate_limit_limit", "-")))
+    details.add_row(
+        "Rate limit reset",
+        _format_rate_limit_reset(summary.get("rate_limit_reset")),
+    )
     details.add_row("Export path", summary.get("export_path") or "(dry run)")
+    metrics_recorder = get_metrics()
+    metrics_snapshot = metrics_recorder.snapshot()
+    metrics_recorder.clear()
+    api_counter = 0
+    for key, value in metrics_snapshot.get("counters", {}).items():
+        if key.startswith("raindrop.api_request"):
+            api_counter += int(value)
+    if api_counter:
+        details.add_row("API requests", str(api_counter))
     console.print(details)
 
 
@@ -380,10 +412,13 @@ def _render_reprocess_summary(summary: dict[str, Any]) -> None:
         "new_status",
         "manual_review",
         "rate_limit_remaining",
+        "rate_limit_limit",
+        "rate_limit_reset",
     ]:
         if key in summary:
             details.add_row(key.replace("_", " ").title(), str(summary[key]))
     console.print(details)
+    get_metrics().clear()
 
 
 def _render_status(entries: list[dict[str, Any]]) -> None:
@@ -397,6 +432,8 @@ def _render_status(entries: list[dict[str, Any]]) -> None:
     table.add_column("Processed", justify="right")
     table.add_column("Manual", justify="right")
     table.add_column("Remaining", justify="right")
+    table.add_column("Limit", justify="right")
+    table.add_column("Reset")
     table.add_column("Completed")
 
     for entry in entries:
@@ -406,7 +443,23 @@ def _render_status(entries: list[dict[str, Any]]) -> None:
             str(entry.get("links_processed", 0)),
             str(entry.get("manual_review", 0)),
             str(entry.get("rate_limit_remaining", "-")),
+            str(entry.get("rate_limit_limit", "-")),
+            _format_rate_limit_reset(entry.get("rate_limit_reset")),
             entry.get("completed_at") or "--",
         )
 
     console.print(table)
+
+
+def _format_rate_limit_reset(value: Any) -> str:
+    if value in (None, "", "-"):
+        return "-"
+    try:
+        timestamp = int(value)
+    except (TypeError, ValueError):
+        return str(value)
+    try:
+        reset_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    except (OSError, OverflowError, ValueError):
+        return str(value)
+    return reset_time.strftime("%Y-%m-%d %H:%M:%S UTC")

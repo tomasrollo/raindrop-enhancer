@@ -109,6 +109,7 @@ class SyncRun(SQLModel, table=True):
     status_code: Optional[int] = Field(default=None)
     rate_limit_remaining: Optional[int] = Field(default=None)
     rate_limit_reset: Optional[int] = Field(default=None)
+    rate_limit_limit: Optional[int] = Field(default=None)
 
 
 class ConfigSettings(SQLModel, table=True):

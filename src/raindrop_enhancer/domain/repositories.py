@@ -226,6 +226,7 @@ def _sync_run_payload(run: SyncRun) -> dict:
         "status_code": run.status_code,
         "rate_limit_remaining": run.rate_limit_remaining,
         "rate_limit_reset": run.rate_limit_reset,
+        "rate_limit_limit": run.rate_limit_limit,
     }
 
 

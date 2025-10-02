@@ -8,6 +8,7 @@ from typing import Callable, Iterable
 import requests
 
 from raindrop_enhancer.util import retry
+from raindrop_enhancer.util.logging import log_retry_event
 
 
 def _chunked(items: list[dict], size: int) -> Iterable[list[dict]]:
@@ -26,6 +27,7 @@ class TaggingService:
     max_tags: int = 5
     timeout: float = 30.0
     transport: Callable[[list[dict]], list[dict]] | None = None
+    on_retry: Callable[[retry.RetryEvent], None] | None = log_retry_event
 
     def __post_init__(self) -> None:
         if self.batch_size <= 0:
@@ -120,4 +122,4 @@ class TaggingService:
             body = response.json()
             return body.get("results", body.get("data", body))
 
-        return retry.retry(_call)
+        return retry.retry(_call, on_retry=self.on_retry)

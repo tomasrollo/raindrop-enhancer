@@ -54,11 +54,11 @@
   _Depends on_: T016, T021, T005
 
 ## Phase 3.4: Integration & Performance
-- [ ] T023 Integrate structured logging & metrics in `src/raindrop_enhancer/util/logging.py` and surface rate-limit telemetry in CLI summaries.  
+- [X] T023 Integrate structured logging & metrics in `src/raindrop_enhancer/util/logging.py` and surface rate-limit telemetry in CLI summaries.  
   _Depends on_: T022
-- [ ] T024 Complete JSON export writer and schema versioning in `src/raindrop_enhancer/services/storage.py` (ensure idempotent updates).  
+- [X] T024 Complete JSON export writer and schema versioning in `src/raindrop_enhancer/services/storage.py` (ensure idempotent updates).  
   _Depends on_: T021
-- [ ] T025 Implement performance benchmark in `scripts/perf/benchmark_sync.py` targeting 1k-link fixture and report against 60s SLA.  
+- [X] T025 Implement performance benchmark in `scripts/perf/benchmark_sync.py` targeting 1k-link fixture and report against 60s SLA.  
   _Depends on_: T021, T024
 
 ## Phase 3.5: Polish & Validation

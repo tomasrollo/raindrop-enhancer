@@ -68,6 +68,7 @@ class FakeRaindropClient:
 
     def _headers(self) -> dict[str, str]:
         return {
+            "X-RateLimit-Limit": "120",
             "X-RateLimit-Remaining": str(self.rate_limit_remaining),
             "X-RateLimit-Reset": str(self.rate_limit_reset),
         }
@@ -113,6 +114,7 @@ def test_full_sync_writes_database_and_json_export(tmp_path):
     assert summary["processed"] == 2
     assert summary["skipped"] == 0
     assert summary["rate_limit_remaining"] == client.rate_limit_remaining
+    assert summary["rate_limit_limit"] == int(client._headers()["X-RateLimit-Limit"])
 
     export_path = Path(summary["export_path"])
     assert export_path.exists()

@@ -13,9 +13,13 @@ from uuid import uuid4
 from raindrop_enhancer.domain.entities import Collection, LinkRecord, SyncRun
 from raindrop_enhancer.domain.repositories import SQLiteRepository
 from raindrop_enhancer.services.storage import write_export
+from raindrop_enhancer.util.logging import get_logger, get_metrics
 
 SCHEMA_VERSION = "1.0"
 EXPORT_DIRNAME = "exports"
+
+logger = get_logger(__name__)
+METRICS = get_metrics()
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +107,7 @@ def run_reprocess(
     previous_status = existing.status if existing else "missing"
 
     item, headers = api_client.fetch_raindrop(raindrop_id)
+    METRICS.increment("raindrop.api_request", component="raindrop")
     context.update_rate_limit(headers)
 
     collection_meta = {
@@ -174,6 +179,7 @@ def status_summary(*, data_dir: Path, limit: int = 10) -> list[dict[str, Any]]:
                 "failures": run.failures,
                 "rate_limit_remaining": run.rate_limit_remaining,
                 "rate_limit_reset": run.rate_limit_reset,
+                "rate_limit_limit": run.rate_limit_limit,
                 "export_path": run.output_path,
             }
         )
@@ -207,6 +213,7 @@ class SyncExecution:
     failures: list[dict[str, Any]] = field(default_factory=list)
     rate_limit_remaining: int | None = None
     rate_limit_reset: int | None = None
+    rate_limit_limit: int | None = None
     started_at: datetime = field(init=False)
     completed_at: datetime | None = None
 
@@ -222,6 +229,7 @@ class SyncExecution:
     def update_rate_limit(self, headers: dict[str, str]) -> None:
         remaining = headers.get("X-RateLimit-Remaining")
         reset = headers.get("X-RateLimit-Reset")
+        limit = headers.get("X-RateLimit-Limit")
         if remaining:
             try:
                 self.rate_limit_remaining = int(remaining)
@@ -232,6 +240,30 @@ class SyncExecution:
                 self.rate_limit_reset = int(reset)
             except ValueError:
                 pass
+        if limit:
+            try:
+                self.rate_limit_limit = int(limit)
+            except ValueError:
+                pass
+
+        if self.rate_limit_remaining is not None:
+            METRICS.set_gauge(
+                "raindrop.rate_limit.remaining",
+                float(self.rate_limit_remaining),
+                mode=self.mode,
+            )
+        if self.rate_limit_reset is not None:
+            METRICS.set_gauge(
+                "raindrop.rate_limit.reset",
+                float(self.rate_limit_reset),
+                mode=self.mode,
+            )
+        if self.rate_limit_limit is not None:
+            METRICS.set_gauge(
+                "raindrop.rate_limit.limit",
+                float(self.rate_limit_limit),
+                mode=self.mode,
+            )
 
     def record_failure(self, raindrop_id: int, reason: str) -> None:
         self.manual_review += 1
@@ -263,7 +295,19 @@ def _run_sync(
         dry_run=dry_run,
     )
 
+    logger.info(
+        "sync_start",
+        extra={
+            "event": "sync_start",
+            "mode": mode,
+            "dry_run": dry_run,
+            "batch_size": batch_size,
+            "collection_filter": list(collection_ids) if collection_ids else None,
+        },
+    )
+
     collections, headers = api_client.list_collections()
+    METRICS.increment("raindrop.api_request", component="collections")
     context.update_rate_limit(headers)
 
     filter_set = set(collection_ids) if collection_ids else None
@@ -297,6 +341,7 @@ def _run_sync(
                     collection_id, last_update=last_update_param
                 )
         context.update_rate_limit(item_headers)
+        METRICS.increment("raindrop.api_request", component="raindrops")
 
         if not items:
             continue
@@ -328,7 +373,26 @@ def _run_sync(
     )
 
     export_path = _finalise_run(context, processed_payload)
-    return _build_summary(context, export_path)
+    summary = _build_summary(context, export_path)
+
+    logger.info(
+        "sync_completed",
+        extra={
+            "event": "sync_completed",
+            "run_id": summary.get("run_id"),
+            "mode": summary.get("mode"),
+            "processed": summary.get("processed"),
+            "skipped": summary.get("skipped"),
+            "manual_review": summary.get("manual_review"),
+            "failures": len(summary.get("failures", [])),
+            "rate_limit_remaining": summary.get("rate_limit_remaining"),
+            "rate_limit_reset": summary.get("rate_limit_reset"),
+            "rate_limit_limit": summary.get("rate_limit_limit"),
+            "export_path": summary.get("export_path"),
+        },
+    )
+
+    return summary
 
 
 def _prepare_repository(data_dir: Path) -> SQLiteRepository:
@@ -475,10 +539,10 @@ def _write_export(context: SyncExecution) -> Path:
     export_dir.mkdir(parents=True, exist_ok=True)
     export_path = export_dir / f"sync-{context.run_id}.json"
     payload = _export_payload(context)
-    write_export(export_path, payload)
+    changed = write_export(export_path, payload, schema_version=SCHEMA_VERSION)
 
     latest_path = export_dir / "latest.json"
-    if latest_path != export_path:
+    if latest_path != export_path and (changed or not latest_path.exists()):
         shutil.copyfile(export_path, latest_path)
 
     return export_path
@@ -542,6 +606,7 @@ def _record_sync_run(context: SyncExecution, export_path: Path | None) -> None:
     run.output_path = str(export_path) if export_path else None
     run.rate_limit_remaining = context.rate_limit_remaining
     run.rate_limit_reset = context.rate_limit_reset
+    run.rate_limit_limit = context.rate_limit_limit
     context.repo.record_sync_run(run)
 
 
@@ -564,6 +629,7 @@ def _build_summary(context: SyncExecution, export_path: Path | None) -> dict[str
         "duration_seconds": duration_seconds,
         "rate_limit_remaining": context.rate_limit_remaining,
         "rate_limit_reset": context.rate_limit_reset,
+        "rate_limit_limit": context.rate_limit_limit,
     }
 
 
