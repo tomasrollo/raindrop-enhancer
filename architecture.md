@@ -12,7 +12,55 @@ The application is designed with a layered architecture that separates concerns 
 - **Infrastructure:** Contains components that interact with external systems and provide utility functions, such as API clients, database connections, and configuration management.
 - **External Systems:** Third-party services that the application integrates with, like the Raindrop.io API.
 
-![Architecture Diagram](architecture.mermaid)
+```mermaid
+graph TD
+    subgraph "User Interaction"
+        User[<fa:fa-user> User] -->|Executes| CLI{CLI Application<br>cli/main.py}
+    end
+
+    subgraph "Application Layer"
+        CLI -->|Uses| SyncService[<fa:fa-sync> Sync Service<br>services/sync.py]
+        CLI -->|Uses| TaggingService[<fa:fa-tags> Tagging Service<br>services/tagging.py]
+        CLI -->|Uses| StorageService[<fa:fa-database> Storage Service<br>services/storage.py]
+    end
+
+    subgraph "Domain Layer"
+        SyncService -->|Manipulates| DomainEntities[<fa:fa-box-open> Domain Entities<br>domain/entities.py]
+        TaggingService -->|Manipulates| DomainEntities
+        StorageService -->|Accesses| DomainRepositories[<fa:fa-warehouse> Domain Repositories<br>domain/repositories.py]
+        DomainRepositories -- "Implemented by" --> StorageService
+    end
+
+    subgraph "Infrastructure Layer"
+        SyncService -->|Calls| RaindropApiClient[<fa:fa-cloud> Raindrop API Client<br>api/client.py]
+        TaggingService -->|Calls| RaindropApiClient
+        RaindropApiClient -->|HTTP Requests| ExternalApi[<fa:fa-server> External Raindrop.io API]
+        
+        CLI -- "Configured by" --> ConfigUtil[<fa:fa-cog> Config Utility<br>util/config.py]
+        RaindropApiClient -- "Configured by" --> ConfigUtil
+        RaindropApiClient -- "Uses" --> RetryUtil[<fa:fa-redo> Retry Utility<br>util/retry.py]
+        
+        subgraph "Cross-Cutting Concerns"
+            LoggingUtil[<fa:fa-file-alt> Logging Utility<br>util/logging.py]
+        end
+    end
+
+    classDef default fill:#fff,stroke:#333,stroke-width:1px;
+    classDef user fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef cli fill:#ccf,stroke:#333,stroke-width:2px;
+    classDef service fill:#9cf,stroke:#333,stroke-width:1.5px;
+    classDef domain fill:#fdb,stroke:#333,stroke-width:1.5px;
+    classDef infra fill:#cfc,stroke:#333,stroke-width:1.5px;
+    classDef external fill:#f99,stroke:#333,stroke-width:2px;
+    classDef util fill:#eee,stroke:#333,stroke-width:1px;
+
+    class User user;
+    class CLI cli;
+    class SyncService,TaggingService,StorageService service;
+    class DomainEntities,DomainRepositories domain;
+    class RaindropApiClient,ConfigUtil,RetryUtil,LoggingUtil infra;
+    class ExternalApi external;
+```
 
 ## 2. Component Breakdown
 
@@ -136,54 +184,3 @@ This package contains various helper modules:
 - **Raindrop.io API:** The primary source of data for the application. The application fetches bookmark and collection data from this API.
 - **Web Article URLs:** The application accesses various websites to download and extract article content for enrichment.
 - **LLM Provider:** An external language model is used via an API to provide intelligent tag suggestions.
-
-## 5. Architecture Diagram
-
-```mermaid
-graph TD
-    subgraph User Interface
-        CLI["CLI (cli/main.py)"]
-    end
-
-    subgraph Application Services
-        SyncService["Sync Service (services/sync.py)"]
-        TaggingService["Tagging Service (services/tagging.py)"]
-        StorageService["Storage Service (services/storage.py)"]
-    end
-
-    subgraph Domain
-        Entities["Domain Entities (domain/entities.py)"]
-        Repositories["Repository (domain/repositories.py)"]
-    end
-
-    subgraph Infrastructure
-        RaindropClient["Raindrop.io API Client (api/client.py)"]
-        Database["SQLite Database (raindrop.db)"]
-        Config["Configuration (util/config.py)"]
-        ContentExtractor["Content Extractor (trafilatura)"]
-        LLMClient["LLM Client (pluggable)"]
-    end
-
-    subgraph External Systems
-        RaindropAPI["Raindrop.io API"]
-        WebArticle["Web Article URL"]
-    end
-
-    CLI --> Config
-    CLI --> SyncService
-    CLI --> Repositories
-
-    SyncService --> Repositories
-    SyncService --> TaggingService
-    SyncService --> ContentExtractor
-    SyncService --> StorageService
-    SyncService --> RaindropClient
-
-    TaggingService --> LLMClient
-
-    Repositories --> Database
-    Repositories --> Entities
-
-    RaindropClient --> RaindropAPI
-    ContentExtractor --> WebArticle
-```
