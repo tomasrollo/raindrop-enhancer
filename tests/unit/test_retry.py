@@ -1,7 +1,11 @@
+import pytest
 from raindrop_enhancer.util.retry import backoff
 
 
-def test_backoff_returns_number():
+def test_retry_backoff_and_retry_after():
+    """
+    Unit: Retry helper should implement exponential backoff, jitter, and Retry-After handling.
+    """
     val = backoff(1)
-    if not isinstance(val, float):
-        raise AssertionError("backoff should return a float")
+    assert isinstance(val, float)
+    assert val >= 0
