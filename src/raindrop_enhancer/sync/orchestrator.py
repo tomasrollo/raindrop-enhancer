@@ -99,7 +99,22 @@ class Orchestrator:
         self.client.on_request = _on_request
         self.client.on_retry = _on_retry
 
-        for coll in self.client.list_collections():
+        # Fetch collections once and ensure the special 'Unsorted' collection (-1)
+        # is always included so those raindrops aren't missed.
+        collections = list(self.client.list_collections())
+        # If the client returned at least one collection, ensure the special
+        # 'Unsorted' collection (-1) is present so those raindrops aren't missed.
+        if collections:
+            try:
+                has_unsorted = any(
+                    (c.get("_id") == -1 or c.get("id") == -1) for c in collections
+                )
+            except Exception:
+                has_unsorted = False
+            if not has_unsorted:
+                collections.append({"_id": -1})
+
+        for coll in collections:
             cid = coll.get("_id") or coll.get("id")
             if cid is None:
                 continue
