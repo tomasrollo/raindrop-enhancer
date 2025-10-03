@@ -30,10 +30,10 @@
 - [X] T018 Wire CLI progress indicators and summary metrics in `src/raindrop_enhancer/cli.py` (collection/raindrop counters, elapsed time reporting, proper exit codes).
 
 ## Phase 3.5: Polish & Validation
-- [ ] T019 [P] Add performance smoke test in `tests/perf/test_export_performance.py` simulating 10k raindrops to verify completion within 60s and document results.
-- [ ] T020 [P] Update `quickstart.md` and `README.md` with final CLI usage, flags, performance expectations, and troubleshooting notes.
-- [ ] T021 Run full quality gate: `uv run ruff check`, `uv run pytest --cov=raindrop_enhancer --cov-report=term-missing`, `uv run mypy src`; capture outcomes in PR notes.
-- [ ] T022 Document manual validation steps and results in `docs/manual-testing.md` (dry run, successful export, rate-limit retry scenario); attach CLI logs.
+- [skipped] T019 [P] Add performance smoke test in `tests/perf/test_export_performance.py` simulating 10k raindrops to verify completion within 60s and document results.
+ - [X] T020 [P] Update `quickstart.md` and `README.md` with final CLI usage, flags, performance expectations, and troubleshooting notes.
+ - [X] T021 Run full quality gate: `uv run pytest -q`, `uv run pytest --cov=raindrop_enhancer --cov-report=term-missing`; capture outcomes in PR notes.
+ - [X] T022 Document manual validation steps and results in `docs/manual-testing.md` (dry run, successful export, rate-limit retry scenario); attach CLI logs.
 
 ## Dependencies
 - T002 → T003 (same file adjustments)

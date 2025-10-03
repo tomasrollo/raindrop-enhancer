@@ -53,6 +53,11 @@ uv run raindrop-export --verbose --limit-mock 10000
 ```
 - Uses mock fixture (to be added) to simulate 10k raindrops and ensures export completes within 60s.
 
+## Performance & Troubleshooting Notes
+
+- Performance expectation: exporting up to 10k active raindrops should complete within 60s on a typical developer machine when the mock fixture/run is used and network latency is reasonable. Real-world performance depends on network conditions and Raindrop API rate limiting (120 req/min), which the CLI respects via throttling and exponential backoff.
+- If you see slower runs, enable `--verbose` to surface retry/backoff logs and consider running during off-peak hours or reducing per-request concurrency in a future configuration flag.
+
 ## Troubleshooting
 - Missing token: ensure `.env` is in repo root and not ignored; rerun `uv run raindrop-export --help` to confirm CLI installed.
 - Rate-limit errors: CLI automatically retries for up to 60s; repeated failures logged. Increase delay via future config flag if necessary.

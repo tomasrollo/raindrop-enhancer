@@ -11,8 +11,14 @@ def test_retry_triggers_on_retry_and_succeeds(httpx_mock):
     client.on_retry = on_retry
 
     # First response: 429 (will cause a retry), second: success
-    httpx_mock.add_response(method="GET", url="https://api.raindrop.io/rest/v1/collections", status_code=429)
-    httpx_mock.add_response(method="GET", url="https://api.raindrop.io/rest/v1/collections", json={"items": []})
+    httpx_mock.add_response(
+        method="GET", url="https://api.raindrop.io/rest/v1/collections", status_code=429
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.raindrop.io/rest/v1/collections",
+        json={"items": []},
+    )
 
     items = client.list_collections()
     assert items == []
@@ -32,9 +38,17 @@ def test_retry_backoff_increases_delay(httpx_mock):
     client.on_retry = on_retry
 
     # Simulate two 429 responses so we have two retries, then a success
-    httpx_mock.add_response(method="GET", url="https://api.raindrop.io/rest/v1/collections", status_code=429)
-    httpx_mock.add_response(method="GET", url="https://api.raindrop.io/rest/v1/collections", status_code=429)
-    httpx_mock.add_response(method="GET", url="https://api.raindrop.io/rest/v1/collections", json={"items": []})
+    httpx_mock.add_response(
+        method="GET", url="https://api.raindrop.io/rest/v1/collections", status_code=429
+    )
+    httpx_mock.add_response(
+        method="GET", url="https://api.raindrop.io/rest/v1/collections", status_code=429
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.raindrop.io/rest/v1/collections",
+        json={"items": []},
+    )
 
     items = client.list_collections()
     assert items == []
