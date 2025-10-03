@@ -4,25 +4,25 @@
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/, quickstart.md
 
 ## Phase 3.1: Setup
-- [ ] T001 Create package skeleton (`src/raindrop_enhancer/__init__.py`, `api/__init__.py`, `exporters/__init__.py`, `models.py`) matching plan structure.
-- [ ] T002 Ensure runtime dependencies in `pyproject.toml` (`gracy`, `click`, `rich`, `python-dotenv`, `httpx`) are present via `uv add` if missing; sync lockfile.
-- [ ] T003 Add/verify test support dependencies in `pyproject.toml` (`pytest-httpx`, `pytest-asyncio`, `click`) and configure `tool.pytest.ini_options` if needed for async tests.
+- [X] T001 Create package skeleton (`src/raindrop_enhancer/__init__.py`, `api/__init__.py`, `exporters/__init__.py`, `models.py`) matching plan structure.
+- [X] T002 Ensure runtime dependencies in `pyproject.toml` (`gracy`, `click`, `rich`, `python-dotenv`, `httpx`) are present via `uv add` if missing; sync lockfile.
+- [X] T003 Add/verify test support dependencies in `pyproject.toml` (`pytest-httpx`, `pytest-asyncio`, `click`) and configure `tool.pytest.ini_options` if needed for async tests.
 
 ## Phase 3.2: Tests First (TDD)
-- [ ] T004 [P] Add failing contract test for `GET /rest/v1/collections` in `tests/contract/test_raindrop_endpoints.py::test_list_collections_contract` using mocked HTTP responses.
-- [ ] T005 [P] Add failing contract test for `GET /rest/v1/raindrops/{collection_id}` in `tests/contract/test_raindrop_endpoints.py::test_list_raindrops_contract` covering pagination and filters.
-- [ ] T006 [P] Add failing unit tests for collection and raindrop dataclass helpers in `tests/unit/test_models.py` (validation rules, mapping from API payload).
-- [ ] T007 [P] Add failing unit tests for pagination, retry/backoff behavior in `tests/unit/test_raindrop_client.py` using `pytest-httpx` fixtures.
-- [ ] T008 [P] Add failing unit tests for JSON exporter formatting in `tests/unit/test_json_exporter.py` (ensures JSON array structure and field names).
-- [ ] T009 Add failing integration test for successful CLI export (`raindrop-export`) in `tests/integration/test_cli_export.py::test_export_success_writes_json` asserting stdout JSON and progress output handling.
-- [ ] T010 Add failing integration test for missing token handling in `tests/integration/test_cli_export.py::test_export_missing_token_exits_with_error` validating exit code and stderr messaging.
+- [X] T004 [P] Add failing contract test for `GET /rest/v1/collections` in `tests/contract/test_raindrop_endpoints.py::test_list_collections_contract` using mocked HTTP responses.
+- [X] T005 [P] Add failing contract test for `GET /rest/v1/raindrops/{collection_id}` in `tests/contract/test_raindrop_endpoints.py::test_list_raindrops_contract` covering pagination and filters.
+- [X] T006 [P] Add failing unit tests for collection and raindrop dataclass helpers in `tests/unit/test_models.py` (validation rules, mapping from API payload).
+- [X] T007 [P] Add failing unit tests for pagination, retry/backoff behavior in `tests/unit/test_raindrop_client.py` using `pytest-httpx` fixtures.
+- [X] T008 [P] Add failing unit tests for JSON exporter formatting in `tests/unit/test_json_exporter.py` (ensures JSON array structure and field names).
+- [X] T009 Add failing integration test for successful CLI export (`raindrop-export`) in `tests/integration/test_cli_export.py::test_export_success_writes_json` asserting stdout JSON and progress output handling.
+- [X] T010 Add failing integration test for missing token handling in `tests/integration/test_cli_export.py::test_export_missing_token_exits_with_error` validating exit code and stderr messaging.
 
 ## Phase 3.3: Core Implementation (after tests are failing)
-- [ ] T011 Implement data models in `src/raindrop_enhancer/models.py` (dataclasses/TypedDicts with validation helpers to filter inactive items).
-- [ ] T012 Implement Gracy-based Raindrop client in `src/raindrop_enhancer/api/raindrop_client.py` (auth header from env, pagination, retry/backoff, filtering of inactive raindrops).
-- [ ] T013 Implement JSON exporter in `src/raindrop_enhancer/exporters/json_exporter.py` producing ordered JSON array and optional pretty formatting hooks.
-- [ ] T014 Implement CLI command in `src/raindrop_enhancer/cli.py` (Click command with `--output`, `--quiet`, `--verbose`, `--dry-run`, `--pretty`, loads `.env`, wires Rich progress, invokes client + exporter).
-- [ ] T015 Register CLI entrypoint in `src/raindrop_enhancer/__init__.py` and `pyproject.toml` `[project.scripts]` so `uv run raindrop-export` is available; ensure package exports necessary symbols.
+- [X] T011 Implement data models in `src/raindrop_enhancer/models.py` (dataclasses/TypedDicts with validation helpers to filter inactive items).
+- [X] T012 Implement Gracy-based Raindrop client in `src/raindrop_enhancer/api/raindrop_client.py` (auth header from env, pagination, retry/backoff, filtering of inactive raindrops).
+- [X] T013 Implement JSON exporter in `src/raindrop_enhancer/exporters/json_exporter.py` producing ordered JSON array and optional pretty formatting hooks.
+- [X] T014 Implement CLI command in `src/raindrop_enhancer/cli.py` (Click command with `--output`, `--quiet`, `--verbose`, `--dry-run`, `--pretty`, loads `.env`, wires Rich progress, invokes client + exporter).
+- [X] T015 Register CLI entrypoint in `src/raindrop_enhancer/__init__.py` and `pyproject.toml` `[project.scripts]` so `uv run raindrop-export` is available; ensure package exports necessary symbols.
 
 ## Phase 3.4: Integration & Resilience
 - [ ] T016 Enhance client logging and telemetry in `src/raindrop_enhancer/api/raindrop_client.py` (structured logs, Rich console integration for verbose mode).
