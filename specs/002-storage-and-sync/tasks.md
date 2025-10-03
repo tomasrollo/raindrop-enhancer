@@ -8,11 +8,11 @@
 - [ ] T002 [P] Create platform-specific data directory helpers preview (doc-only): note default DB paths in README draft (no code changes yet) to guide later implementation.
 
 ## Phase 3.2: Tests First (TDD) — must fail before implementation
-- [ ] T003 Create contract test for incremental Raindrop fetch in `tests/contract/test_raindrop_incremental_contract.py` covering `sort=created` query and cursor filter.
-- [ ] T004 [P] Add unit test skeletons in `tests/unit/test_sqlite_store.py` validating schema creation, insert batching, append-only constraint, and corruption detection via `PRAGMA quick_check`.
-- [ ] T005 [P] Add unit test skeletons in `tests/unit/test_sync_orchestrator.py` covering baseline sync, incremental sync, and full-refresh flag behavior.
-- [ ] T006 [P] Add integration test skeleton in `tests/integration/test_cli_sync.py` exercising CLI baseline run, incremental run (no new data), dry-run, and `--full-refresh` path with temp DB.
-- [ ] T007 [P] Define performance smoke test placeholders in `tests/perf/test_sync_baseline.py` and `tests/perf/test_sync_incremental.py` asserting target runtimes (skip markers allowed until implementation).
+- [X] T003 Create contract test for incremental Raindrop fetch in `tests/contract/test_raindrop_incremental_contract.py` covering `sort=created` query and cursor filter.
+- [X] T004 [P] Add unit test skeletons in `tests/unit/test_sqlite_store.py` validating schema creation, insert batching, append-only constraint, and corruption detection via `PRAGMA quick_check`.
+- [X] T005 [P] Add unit test skeletons in `tests/unit/test_sync_orchestrator.py` covering baseline sync, incremental sync, and full-refresh flag behavior.
+- [X] T006 [P] Add integration test skeleton in `tests/integration/test_cli_sync.py` exercising CLI baseline run, incremental run (no new data), dry-run, and `--full-refresh` path with temp DB.
+- [X] T007 [P] Define performance smoke test placeholders in `tests/perf/test_sync_baseline.py` and `tests/perf/test_sync_incremental.py` asserting target runtimes (skip markers allowed until implementation).
 
 ## Phase 3.3: Core Implementation (only after tests exist & fail)
 - [ ] T008 Implement SQLite storage module in `src/raindrop_enhancer/storage/sqlite_store.py` (schema creation, WAL mode, insert batching, sync_state management, corruption checks).
