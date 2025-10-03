@@ -28,6 +28,7 @@ asyncio_mode = "auto"
 
 [project.scripts]
 raindrop-export = "raindrop_enhancer.cli:main"
+raindrop-sync = "raindrop_enhancer.cli:sync"
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]
