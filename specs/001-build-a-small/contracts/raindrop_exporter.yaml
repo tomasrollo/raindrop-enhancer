@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: Raindrop Exporter Integration Contracts
+  version: 0.1.0
+  description: >-
+    Minimal contract documenting the Raindrop API calls performed by the Unified
+    Raindrop Export CLI. Only fields consumed by the exporter are declared.
+servers:
+  - url: https://api.raindrop.io
+paths:
+  /rest/v1/collections:
+    get:
+      summary: List collections accessible to the authenticated user
+      operationId: listCollections
+      parameters:
+        - in: query
+          name: perpage
+          schema:
+            type: integer
+            default: 200
+            maximum: 200
+          description: Max collections per page.
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+          description: Zero-based page index.
+      responses:
+        "200":
+          description: Collection page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, count]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Collection"
+                  count:
+                    type: integer
+                  lastUpdate:
+                    type: string
+                    format: date-time
+        "401":
+          description: Missing or invalid token
+        "429":
+          description: Rate limited (retry with backoff)
+  /rest/v1/raindrops/{collectionId}:
+    get:
+      summary: List raindrops for a collection
+      operationId: listRaindrops
+      parameters:
+        - in: path
+          name: collectionId
+          required: true
+          schema:
+            type: integer
+          description: Use 0 for unfiled collection.
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: perpage
+          schema:
+            type: integer
+            default: 200
+            maximum: 200
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Filter expression to exclude archived/duplicate items.
+      responses:
+        "200":
+          description: Raindrop page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, count]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Raindrop"
+                  count:
+                    type: integer
+        "401":
+          description: Missing or invalid token
+        "429":
+          description: Rate limited (retry with backoff)
+components:
+  schemas:
+    Collection:
+      type: object
+      required: [_id, title]
+      properties:
+        _id:
+          type: integer
+        title:
+          type: string
+        count:
+          type: integer
+        parentId:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        created:
+          type: string
+          format: date-time
+        lastUpdate:
+          type: string
+          format: date-time
+        access:
+          type: object
+          properties:
+            level:
+              type: integer
+    Raindrop:
+      type: object
+      required: [_id, title, link, created, lastUpdate, tags]
+      properties:
+        _id:
+          type: integer
+        title:
+          type: string
+        link:
+          type: string
+          format: uri
+        collectionId:
+          type: integer
+        created:
+          type: string
+          format: date-time
+        lastUpdate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        removed:
+          type: boolean
+          description: When true, raindrop is archived/removed and must be excluded.
+        duplicate:
+          type: boolean
+        important:
+          type: boolean
+        broken:
+          type: boolean
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: UUID
+security:
+  - bearerAuth: []
