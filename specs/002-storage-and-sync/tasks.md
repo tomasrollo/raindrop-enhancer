@@ -27,13 +27,13 @@
 - [X] T015 Wire performance benchmark fixtures used by `tests/perf/` (synthetic dataset builders, timers) in a new helper `tests/perf/utils.py`.
 
 ## Phase 3.5: Polish & Documentation
-- [ ] T016 [P] Flesh out unit tests in `tests/unit/test_sqlite_store.py` to cover edge cases (duplicate insert, invalid URL rejection, corruption recovery) and ensure green after implementation.
-- [ ] T017 [P] Flesh out unit tests in `tests/unit/test_sync_orchestrator.py` (baseline/incremental logic, cursor updates, dry-run).
-- [ ] T018 [P] Flesh out integration test `tests/integration/test_cli_sync.py` verifying CLI output (text & JSON), exit codes, and temp DB behavior.
+- [X] T016 [P] Flesh out unit tests in `tests/unit/test_sqlite_store.py` to cover edge cases (duplicate insert, invalid URL rejection, corruption recovery) and ensure green after implementation.
+- [X] T017 [P] Flesh out unit tests in `tests/unit/test_sync_orchestrator.py` (baseline/incremental logic, cursor updates, dry-run).
+- [X] T018 [P] Flesh out integration test `tests/integration/test_cli_sync.py` verifying CLI output (text & JSON), exit codes, and temp DB behavior.
 - [ ] T019 [P] Finalize contract test assertions in `tests/contract/test_raindrop_incremental_contract.py` ensuring request headers, query params, and pagination stop conditions.
 - [ ] T020 [P] Fill in performance tests in `tests/perf/test_sync_baseline.py` and `tests/perf/test_sync_incremental.py`, ensuring runtime thresholds documented in constitution are enforced.
-- [ ] T021 Update `docs/manual-testing.md` (or create section) with manual verification steps for baseline, incremental, and full-refresh sync flows.
-- [ ] T022 Update `README.md` (or CLI docs) with new `raindrop-sync` command usage, flags, and default DB locations.
+- [X] T021 Update `docs/manual-testing.md` (or create section) with manual verification steps for baseline, incremental, and full-refresh sync flows.
+- [X] T022 Update `README.md` (or CLI docs) with new `raindrop-sync` command usage, flags, and default DB locations.
 - [ ] T023 Run `uv run pytest --cov=raindrop_enhancer --cov-report=term-missing` and ensure coverage ≥90% on new modules; address gaps.
 - [ ] T024 Run performance smoke tests via `uv run pytest tests/perf` and document results in plan/README if targets met.
 - [ ] T025 Conduct manual quickstart validation following `specs/002-storage-and-sync/quickstart.md`; record findings (log or docs update).

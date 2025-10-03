@@ -60,3 +60,28 @@ def test_full_refresh_flag_resets_db(tmp_path: Path):
     orch2 = Orchestrator(db, client2)
     outcome2 = orch2.run(full_refresh=True, dry_run=False)
     assert outcome2.new_links == 2
+
+
+def test_incremental_updates_cursor_and_dry_run(tmp_path: Path):
+    db = tmp_path / "test.db"
+    # initial payloads
+    payloads = _make_payloads(3)
+    client = StubClient(payloads)
+    orch = Orchestrator(db, client)
+    outcome1 = orch.run(full_refresh=True, dry_run=False)
+    assert outcome1.new_links == 3
+
+    # Now simulate new items but run as dry-run -> should not update sync_state
+    new_payloads = _make_payloads(2, start=datetime.utcnow())
+    # ensure new IDs that don't collide with the baseline (offset by 100)
+    for idx, p in enumerate(new_payloads):
+        p["_id"] = 100 + idx
+    client2 = StubClient(new_payloads)
+    orch2 = Orchestrator(db, client2)
+    outcome_dry = orch2.run(full_refresh=False, dry_run=True)
+    assert outcome_dry.new_links == 0
+
+    # After a real run, the cursor updates and new items are inserted
+    orch3 = Orchestrator(db, client2)
+    outcome_real = orch3.run(full_refresh=False, dry_run=False)
+    assert outcome_real.new_links == 2

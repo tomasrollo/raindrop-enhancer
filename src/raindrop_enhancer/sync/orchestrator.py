@@ -38,11 +38,17 @@ class Orchestrator:
 
     def run(self, full_refresh: bool = False, dry_run: bool = False) -> SyncOutcome:
         started = datetime.utcnow()
-        self.store.connect()
 
-        if not self.store.quick_check():
-            raise RuntimeError("Database integrity check failed")
-        state = self.store.get_sync_state()
+        # In dry-run mode we avoid creating or touching the DB file. This
+        # ensures commands like `--dry-run --full-refresh` do not produce a
+        # side-effect of creating the DB on disk.
+        state = None
+        if not dry_run:
+            self.store.connect()
+
+            if not self.store.quick_check():
+                raise RuntimeError("Database integrity check failed")
+            state = self.store.get_sync_state()
 
         was_full = False
         if full_refresh or state is None:

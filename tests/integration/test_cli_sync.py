@@ -52,6 +52,13 @@ def test_cli_baseline_and_incremental(tmp_path, monkeypatch):
     assert out["new_links"] == 5
     assert out["total_links"] == 5
 
+    # ensure DB file exists and contains 5 links
+    from raindrop_enhancer.storage.sqlite_store import SQLiteStore
+
+    store = SQLiteStore(db)
+    store.connect()
+    assert store.count_links() == 5
+
     # incremental run: no new items
     StubClient.payloads = []
     result2 = runner.invoke(
@@ -60,6 +67,9 @@ def test_cli_baseline_and_incremental(tmp_path, monkeypatch):
     assert result2.exit_code == 0
     out2 = json.loads(result2.output)
     assert out2["new_links"] == 0
+
+    # DB still has 5 links
+    assert store.count_links() == 5
 
 
 def test_cli_full_refresh_and_dry_run(tmp_path, monkeypatch):
@@ -77,3 +87,6 @@ def test_cli_full_refresh_and_dry_run(tmp_path, monkeypatch):
     out = json.loads(result.output)
     # dry-run currently doesn't perform inserts, so new_links may be 0; ensure command succeeds
     assert "new_links" in out
+
+    # ensure DB file was not created by dry-run
+    assert not db.exists()

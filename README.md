@@ -24,6 +24,29 @@ Run example:
 uv run raindrop-export --verbose --output my_raindrops.json
 ```
 
+Database-backed sync (new)
+
+The project includes a `raindrop-sync` command which persists raindrops into a local
+SQLite database and supports incremental runs via a recorded cursor.
+
+Default DB locations:
+
+- macOS: `~/Library/Application Support/raindrop_enhancer/raindrops.db`
+- Linux: `~/.local/share/raindrop_enhancer/raindrops.db`
+- Windows: `%APPDATA%\\raindrop_enhancer\\raindrops.db`
+
+Run a baseline sync:
+
+```bash
+uv run raindrop-sync --json
+```
+
+Use `--db-path` to override the DB file location for testing:
+
+```bash
+uv run raindrop-sync --db-path ./tmp/test.db --json
+```
+
 Troubleshooting
 
 - Missing token: create a `.env` file at the repository root with `RAINDROP_TOKEN=your_token_here`.

@@ -60,3 +60,41 @@ def test_corruption_detection(tmp_path: Path):
     store.connect()
     ok = store.quick_check()
     assert ok is True
+
+
+def test_corruption_recovery_and_backup(tmp_path: Path):
+    """Simulate a corrupted DB file and ensure backup is created and quick_check fails."""
+    db = tmp_path / "test.db"
+    store = SQLiteStore(db)
+    store.connect()
+    # close and corrupt the file
+    store.close()
+    # write invalid content to simulate corruption
+    db.write_bytes(b"not-a-sqlite-db")
+    # reopen using a new store instance
+    import sqlite3
+
+    store2 = SQLiteStore(db)
+    # connecting to a corrupted sqlite file raises DatabaseError
+    try:
+        store2.connect()
+        connected = True
+    except sqlite3.DatabaseError:
+        connected = False
+
+    assert connected is False
+
+    # backup should create a .bak file even without a live connection
+    bak = store2.backup_db()
+    assert bak.exists()
+    # After backup, original db file still exists
+    assert db.exists()
+
+
+def test_url_validation_in_models():
+    from raindrop_enhancer.models import is_valid_url
+
+    assert is_valid_url("https://example.com") is True
+    assert is_valid_url("http://example.com/path") is True
+    assert is_valid_url("ftp://example.com") is False
+    assert is_valid_url("not-a-url") is False

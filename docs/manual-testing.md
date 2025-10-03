@@ -58,3 +58,33 @@ Collecting logs
 Notes
 
 - For reproducible perf tests, use the planned performance fixture (tests/perf) to simulate large counts; the smoke test will be added to CI when available.
+
+6. Sync command (local SQLite storage)
+
+- Baseline sync (first run creates DB):
+
+  ```bash
+  uv run raindrop-sync --db-path ./tmp/raindrops.db --json
+  ```
+
+  Expected:
+  - Creates the SQLite DB at the provided path and writes all active raindrops.
+  - Outputs a JSON summary with `new_links` and `total_links`.
+
+- Incremental sync (no new items):
+
+  ```bash
+  uv run raindrop-sync --db-path ./tmp/raindrops.db --json
+  ```
+
+  Expected:
+  - Reads sync cursor from DB and exits quickly when no new links are found; `new_links` should be 0.
+
+- Full refresh (rebuild):
+
+  ```bash
+  uv run raindrop-sync --db-path ./tmp/raindrops.db --full-refresh --json
+  ```
+
+  Expected:
+  - Backup existing DB to `raindrops.db.bak`, recreate schema, and perform a baseline export.
