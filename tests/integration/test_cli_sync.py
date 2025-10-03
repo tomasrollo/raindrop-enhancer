@@ -1,6 +1,6 @@
 import json
 from click.testing import CliRunner
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from raindrop_enhancer.cli import sync
 
@@ -20,10 +20,11 @@ class StubClient:
 
 
 def _make_payloads(n: int, start: datetime | None = None):
-    start = start or datetime.utcnow() - timedelta(seconds=n)
+    start = start or (datetime.now(timezone.utc) - timedelta(seconds=n))
     out = []
     for i in range(n):
-        created = (start + timedelta(seconds=i)).isoformat() + "Z"
+        created_dt = (start + timedelta(seconds=i)).astimezone(timezone.utc)
+        created = created_dt.isoformat().replace("+00:00", "Z")
         out.append(
             {
                 "_id": i + 1,

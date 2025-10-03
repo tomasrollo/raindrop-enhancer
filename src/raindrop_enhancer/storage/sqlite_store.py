@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Optional
 
@@ -174,7 +174,7 @@ class SQLiteStore:
         # if bak exists, append timestamp
         if bak.exists():
             bak = self.path.with_suffix(
-                self.path.suffix + f".{int(datetime.utcnow().timestamp())}.bak"
+                self.path.suffix + f".{int(datetime.now(timezone.utc).timestamp())}.bak"
             )
         from shutil import copy2
 

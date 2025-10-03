@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from raindrop_enhancer.api.raindrop_client import RaindropClient
@@ -19,10 +19,11 @@ class StubClient(RaindropClient):
 
 
 def _make_payloads(n: int, start: datetime | None = None):
-    start = start or datetime.utcnow() - timedelta(seconds=n)
+    start = start or (datetime.now(timezone.utc) - timedelta(seconds=n))
     out = []
     for i in range(n):
-        created = (start + timedelta(seconds=i)).isoformat() + "Z"
+        created_dt = (start + timedelta(seconds=i)).astimezone(timezone.utc)
+        created = created_dt.isoformat().replace("+00:00", "Z")
         out.append(
             {
                 "_id": i + 1,
@@ -72,7 +73,7 @@ def test_incremental_updates_cursor_and_dry_run(tmp_path: Path):
     assert outcome1.new_links == 3
 
     # Now simulate new items but run as dry-run -> should not update sync_state
-    new_payloads = _make_payloads(2, start=datetime.utcnow())
+    new_payloads = _make_payloads(2, start=datetime.now(timezone.utc))
     # ensure new IDs that don't collide with the baseline (offset by 100)
     for idx, p in enumerate(new_payloads):
         p["_id"] = 100 + idx

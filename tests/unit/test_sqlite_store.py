@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from raindrop_enhancer.storage.sqlite_store import SQLiteStore
@@ -7,15 +7,15 @@ from raindrop_enhancer.models import RaindropLink
 
 
 def _make_link(i: int) -> RaindropLink:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return RaindropLink(
         raindrop_id=1000 + i,
         collection_id=1,
         collection_title="Test",
         title=f"T{i}",
         url=f"https://example.test/{i}",
-        created_at=now.isoformat() + "Z",
-        synced_at=now.isoformat() + "Z",
+        created_at=now.isoformat().replace("+00:00", "Z"),
+        synced_at=now.isoformat().replace("+00:00", "Z"),
         tags_json="[]",
         raw_payload="{}",
     )

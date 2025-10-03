@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -27,7 +27,8 @@ def default_db_path() -> Path:
 
 
 def _now_iso() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+    # timezone-aware ISO8601 UTC with 'Z' suffix
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class Orchestrator:
@@ -37,7 +38,7 @@ class Orchestrator:
         self.store = SQLiteStore(self.db_path)
 
     def run(self, full_refresh: bool = False, dry_run: bool = False) -> SyncOutcome:
-        started = datetime.utcnow()
+        started = datetime.now(timezone.utc)
 
         # In dry-run mode we avoid creating or touching the DB file. This
         # ensures commands like `--dry-run --full-refresh` do not produce a
@@ -117,7 +118,9 @@ class Orchestrator:
                 if created_iso:
                     if max_created_iso is None or created_iso > max_created_iso:
                         max_created_iso = created_iso
-                link = RaindropLink.from_raindrop(r, synced_at=datetime.utcnow())
+                link = RaindropLink.from_raindrop(
+                    r, synced_at=datetime.now(timezone.utc)
+                )
                 batch.append(link)
                 if len(batch) >= 100:
                     if not dry_run:
@@ -147,7 +150,7 @@ class Orchestrator:
             )
             self.store.upsert_sync_state(new_state)
 
-        finished = datetime.utcnow()
+        finished = datetime.now(timezone.utc)
         outcome = SyncOutcome(
             run_started_at=started,
             run_finished_at=finished,
