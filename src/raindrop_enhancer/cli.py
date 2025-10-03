@@ -50,9 +50,21 @@ def main(
 
     Reads `RAINDROP_TOKEN` from environment (or `.env` when using python-dotenv).
     """
-    # Read token from environment only. Explicit .env loading was removed to
-    # keep behavior deterministic for CI/tests (use python-dotenv in your
-    # shell if you want to populate the environment).
+    # Attempt to load a local .env file if present. This is useful for
+    # interactive use. We avoid loading .env while running under pytest so
+    # tests can control the environment deterministically.
+    try:
+        from dotenv import load_dotenv
+    except Exception:
+        load_dotenv = None
+
+    if (
+        load_dotenv is not None
+        and os.path.exists(".env")
+        and "pytest" not in sys.modules
+    ):
+        load_dotenv()
+
     token = os.getenv("RAINDROP_TOKEN")
     if not token:
         click.echo("Missing RAINDROP_TOKEN in environment", err=True)
@@ -124,7 +136,9 @@ def main(
                 BarColumn(),
                 TimeElapsedColumn(),
             ) as progress:
-                task = progress.add_task("Fetching collections and raindrops", total=len(collections) or None)
+                task = progress.add_task(
+                    "Fetching collections and raindrops", total=len(collections) or None
+                )
                 for c in collections:
                     cid = c.get("_id") or c.get("id")
                     if cid is None:
@@ -147,7 +161,9 @@ def main(
 
         if dry_run:
             click.echo(f"Dry run: collected {len(active)} active raindrops")
-            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
+            click.echo(
+                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
+            )
             return
 
         ctx = nullcontext()
@@ -161,8 +177,12 @@ def main(
 
         # Summary metrics
         if not quiet:
-            click.echo(f"Exported {len(active)} raindrops from {len(collections)} collections")
-            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
+            click.echo(
+                f"Exported {len(active)} raindrops from {len(collections)} collections"
+            )
+            click.echo(
+                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
+            )
 
     finally:
         client.close()
