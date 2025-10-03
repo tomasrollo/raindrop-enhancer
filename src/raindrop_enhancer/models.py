@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Iterable
 from urllib.parse import urlparse
+from pathlib import Path
+import json
 
 
 @dataclass
@@ -72,6 +74,53 @@ class Raindrop:
             tags=list(payload.get("tags", [])),
             cover=payload.get("cover"),
         )
+
+
+@dataclass
+class RaindropLink:
+    raindrop_id: int
+    collection_id: int
+    collection_title: str
+    title: str
+    url: str
+    created_at: str  # ISO8601
+    synced_at: str  # ISO8601
+    tags_json: str
+    raw_payload: str
+
+    @staticmethod
+    def from_raindrop(r: "Raindrop", synced_at: datetime) -> "RaindropLink":
+        return RaindropLink(
+            raindrop_id=r.id,
+            collection_id=r.collection_id,
+            collection_title=r.collection_title,
+            title=r.title,
+            url=r.url,
+            created_at=r.created_at.isoformat(),
+            synced_at=synced_at.isoformat(),
+            tags_json=json.dumps(sorted(r.tags)),
+            raw_payload=json.dumps({"id": r.id, "title": r.title, "url": r.url}),
+        )
+
+
+@dataclass
+class SyncState:
+    last_cursor_iso: str
+    last_run_at: str
+    db_version: int
+    last_full_refresh: str
+
+
+@dataclass
+class SyncOutcome:
+    run_started_at: datetime
+    run_finished_at: datetime
+    new_links: int
+    total_links: int
+    was_full_refresh: bool
+    db_path: Path
+    requests_count: int = 0
+    retries_count: int = 0
 
 
 def _parse_ts(value) -> datetime:

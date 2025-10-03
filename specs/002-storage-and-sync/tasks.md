@@ -15,16 +15,16 @@
 - [X] T007 [P] Define performance smoke test placeholders in `tests/perf/test_sync_baseline.py` and `tests/perf/test_sync_incremental.py` asserting target runtimes (skip markers allowed until implementation).
 
 ## Phase 3.3: Core Implementation (only after tests exist & fail)
-- [ ] T008 Implement SQLite storage module in `src/raindrop_enhancer/storage/sqlite_store.py` (schema creation, WAL mode, insert batching, sync_state management, corruption checks).
-- [ ] T009 Update `src/raindrop_enhancer/models.py` with persistence-friendly dataclasses/TypedDicts (`RaindropLink`, `SyncState`, `SyncOutcome`) mirroring `data-model.md`.
-- [ ] T010 Implement sync orchestration in `src/raindrop_enhancer/sync/orchestrator.py` (baseline vs incremental flows, cursor tracking, dry-run handling, full-refresh path).
-- [ ] T011 Extend CLI in `src/raindrop_enhancer/cli.py` with `raindrop-sync` command/flags, wiring orchestrator, summary reporting, JSON output, and exit codes per contract.
-- [ ] T012 Ensure Gracy client (`src/raindrop_enhancer/api/raindrop_client.py`) supports created-timestamp filtering and exposes hook for incremental queries.
+- [X] T008 Implement SQLite storage module in `src/raindrop_enhancer/storage/sqlite_store.py` (schema creation, WAL mode, insert batching, sync_state management, corruption checks).
+- [X] T009 Update `src/raindrop_enhancer/models.py` with persistence-friendly dataclasses/TypedDicts (`RaindropLink`, `SyncState`, `SyncOutcome`) mirroring `data-model.md`.
+- [X] T010 Implement sync orchestration in `src/raindrop_enhancer/sync/orchestrator.py` (baseline vs incremental flows, cursor tracking, dry-run handling, full-refresh path).
+- [X] T011 Extend CLI in `src/raindrop_enhancer/cli.py` with `raindrop-sync` command/flags, wiring orchestrator, summary reporting, JSON output, and exit codes per contract.
+- [X] T012 Ensure Gracy client (`src/raindrop_enhancer/api/raindrop_client.py`) supports created-timestamp filtering and exposes hook for incremental queries.
 
 ## Phase 3.4: Integration & Observability
-- [ ] T013 Add logging/metrics hooks in orchestrator (requests count, retries, new link count) and surface through CLI summaries.
-- [ ] T014 Implement backup-on-full-refresh and DB path resolution utilities, including cross-platform defaults, under `src/raindrop_enhancer/storage`.
-- [ ] T015 Wire performance benchmark fixtures used by `tests/perf/` (synthetic dataset builders, timers) in a new helper `tests/perf/utils.py`.
+- [X] T013 Add logging/metrics hooks in orchestrator (requests count, retries, new link count) and surface through CLI summaries.
+- [X] T014 Implement backup-on-full-refresh and DB path resolution utilities, including cross-platform defaults, under `src/raindrop_enhancer/storage`.
+- [X] T015 Wire performance benchmark fixtures used by `tests/perf/` (synthetic dataset builders, timers) in a new helper `tests/perf/utils.py`.
 
 ## Phase 3.5: Polish & Documentation
 - [ ] T016 [P] Flesh out unit tests in `tests/unit/test_sqlite_store.py` to cover edge cases (duplicate insert, invalid URL rejection, corruption recovery) and ensure green after implementation.

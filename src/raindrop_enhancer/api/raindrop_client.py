@@ -77,6 +77,37 @@ class RaindropClient:
                 break
             page += 1
 
+    def list_raindrops_since(
+        self, collection_id: int, iso_cursor: str | None = None
+    ) -> Iterator[dict]:
+        """Iterate raindrops sorted by created date; stop when created <= iso_cursor.
+
+        Uses perpage=200 and sort=created per contract.
+        """
+        page = 0
+        perpage = 200
+        while True:
+            url = f"{self.base_url}/raindrops/{collection_id}"
+            params = {"page": page, "perpage": perpage, "sort": "created"}
+            if iso_cursor:
+                # include a search param example; contract may refine exact syntax
+                params["search"] = f"created:>={iso_cursor} -is:archived -is:duplicate"
+            resp = self._request_with_retry("GET", url, params=params)
+            data = resp.json()
+            items = data.get("items", [])
+            if not items:
+                break
+            stop = False
+            for it in items:
+                created = it.get("created")
+                if iso_cursor and created and str(created) <= iso_cursor:
+                    stop = True
+                    break
+                yield it
+            if stop:
+                break
+            page += 1
+
     def _enforce_rate_limit_if_needed(self) -> None:
         if not self.enforce_rate_limit or self.rate_limit_per_min <= 0:
             return
