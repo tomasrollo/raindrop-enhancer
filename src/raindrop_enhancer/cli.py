@@ -6,6 +6,7 @@ import os
 import sys
 from contextlib import nullcontext
 from typing import TextIO
+import logging
 
 import click
 
@@ -49,14 +50,9 @@ def main(
 
     Reads `RAINDROP_TOKEN` from environment (or `.env` when using python-dotenv).
     """
-    # Try to load .env if present
-    try:
-        from dotenv import load_dotenv
-
-        load_dotenv()
-    except Exception:
-        pass
-
+    # Read token from environment only. Explicit .env loading was removed to
+    # keep behavior deterministic for CI/tests (use python-dotenv in your
+    # shell if you want to populate the environment).
     token = os.getenv("RAINDROP_TOKEN")
     if not token:
         click.echo("Missing RAINDROP_TOKEN in environment", err=True)
@@ -68,16 +64,35 @@ def main(
         rate_limit_per_min=rate_limit,
     )
 
+    # Configure logging based on flags
+    # - --verbose turns on debug logging from the client
+    # - --quiet suppresses non-error output (keeps warnings/errors only)
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        # Default: only show warnings/errors unless verbose requested
+        logging.basicConfig(level=logging.WARNING)
+
     # Metrics / observability
     retries = []
     requests_made = 0
 
     def on_retry(url: str, attempt: int, delay: float) -> None:
         retries.append((url, attempt, delay))
+        if verbose and not quiet:
+            # Print retry events to stderr so they don't mix with JSON/stdout
+            click.echo(
+                f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s",
+                err=True,
+            )
 
     def on_request(url: str) -> None:
         nonlocal requests_made
         requests_made += 1
+        if verbose and not quiet:
+            click.echo(f"Request: {url}", err=True)
 
     client.on_retry = on_retry
     client.on_request = on_request
@@ -109,9 +124,7 @@ def main(
                 BarColumn(),
                 TimeElapsedColumn(),
             ) as progress:
-                task = progress.add_task(
-                    "Fetching collections and raindrops", total=len(collections) or None
-                )
+                task = progress.add_task("Fetching collections and raindrops", total=len(collections) or None)
                 for c in collections:
                     cid = c.get("_id") or c.get("id")
                     if cid is None:
@@ -134,9 +147,7 @@ def main(
 
         if dry_run:
             click.echo(f"Dry run: collected {len(active)} active raindrops")
-            click.echo(
-                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
-            )
+            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
             return
 
         ctx = nullcontext()
@@ -150,12 +161,8 @@ def main(
 
         # Summary metrics
         if not quiet:
-            click.echo(
-                f"Exported {len(active)} raindrops from {len(collections)} collections"
-            )
-            click.echo(
-                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
-            )
+            click.echo(f"Exported {len(active)} raindrops from {len(collections)} collections")
+            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
 
     finally:
         client.close()
