@@ -264,12 +264,26 @@ def sync(
     requests_made = 0
     retries = []
 
+    # Configure logging based on flags (mirror `main` behavior)
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
+
     def on_request(url: str) -> None:
         nonlocal requests_made
         requests_made += 1
+        if verbose and not quiet:
+            click.echo(f"Request: {url}", err=True)
 
     def on_retry(url: str, attempt: int, delay: float) -> None:
         retries.append((url, attempt, delay))
+        if verbose and not quiet:
+            click.echo(
+                f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True
+            )
 
     client.on_request = on_request
     client.on_retry = on_retry
