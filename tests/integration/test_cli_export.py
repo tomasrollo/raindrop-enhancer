@@ -24,6 +24,12 @@ def test_export_success_writes_json(monkeypatch, httpx_mock):
         url="https://api.raindrop.io/rest/v1/raindrops/1?page=0&perpage=50",
         json={"items": [{"_id": 1, "link": "https://a"}]},
     )
+    # Unsorted collection (-1) is fetched by the CLI as well; return empty
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.raindrop.io/rest/v1/raindrops/-1?page=0&perpage=50",
+        json={"items": []},
+    )
 
     runner = CliRunner()
     result = runner.invoke(main, ["--dry-run"])

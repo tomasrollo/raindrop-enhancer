@@ -111,6 +111,17 @@ def main(
 
     try:
         collections = client.list_collections()
+        # The Raindrop 'Unsorted' collection uses id -1 and is not always
+        # returned by the /collections endpoint. Ensure we always fetch it
+        # so users don't miss those raindrops.
+        try:
+            has_unsorted = any(
+                (c.get("_id") == -1 or c.get("id") == -1) for c in collections
+            )
+        except Exception:
+            has_unsorted = False
+        if not has_unsorted:
+            collections.append({"_id": -1})
         all_items = []
         start = None
         try:
