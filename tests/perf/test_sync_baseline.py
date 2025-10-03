@@ -26,7 +26,7 @@ def test_perf_sync_baseline_small(tmp_path):
     Timer = perf_utils.Timer
     from raindrop_enhancer.models import Raindrop, RaindropLink
     import json
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     # small benchmark size by default; can be scaled via PERF_COUNT env
     count = int(os.environ.get("PERF_COUNT", "1000"))
@@ -39,7 +39,7 @@ def test_perf_sync_baseline_small(tmp_path):
 
     # convert payloads to Raindrop and then to RaindropLink
     links = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for p in payloads:
         r = Raindrop.from_api(p)
         links.append(RaindropLink.from_raindrop(r, now))

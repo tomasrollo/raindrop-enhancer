@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Iterable, Dict, List
 
 
 def make_raindrop_payloads(count: int, start: datetime | None = None) -> List[Dict]:
     """Generate synthetic Raindrop API payloads with monotonically increasing created timestamps."""
-    start = start or datetime.utcnow() - timedelta(seconds=count)
+    # Use timezone-aware UTC datetimes to avoid deprecation warnings
+    start = start or (datetime.now(timezone.utc) - timedelta(seconds=count))
     out: List[Dict] = []
     for i in range(count):
-        created = (start + timedelta(seconds=i)).isoformat() + "Z"
+        # Ensure ISO8601 UTC with 'Z' suffix
+        created_dt = (start + timedelta(seconds=i)).astimezone(timezone.utc)
+        created = created_dt.isoformat().replace("+00:00", "Z")
         out.append(
             {
                 "_id": 100000 + i,

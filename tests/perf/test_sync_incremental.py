@@ -23,7 +23,7 @@ def test_perf_sync_incremental_small(tmp_path):
     make_raindrop_payloads = perf_utils.make_raindrop_payloads
     Timer = perf_utils.Timer
     from raindrop_enhancer.models import Raindrop, RaindropLink
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     # prepare small baseline then incremental payload set
     baseline_count = int(os.environ.get("PERF_BASELINE_COUNT", "500"))
@@ -41,7 +41,7 @@ def test_perf_sync_incremental_small(tmp_path):
     store.connect()
 
     # insert baseline
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     base_links = [
         RaindropLink.from_raindrop(Raindrop.from_api(p), now) for p in baseline
     ]
