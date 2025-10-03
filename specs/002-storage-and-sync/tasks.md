@@ -34,8 +34,8 @@
 - [X] T020 [P] Fill in performance tests in `tests/perf/test_sync_baseline.py` and `tests/perf/test_sync_incremental.py`, ensuring runtime thresholds documented in constitution are enforced.
 - [X] T021 Update `docs/manual-testing.md` (or create section) with manual verification steps for baseline, incremental, and full-refresh sync flows.
 - [X] T022 Update `README.md` (or CLI docs) with new `raindrop-sync` command usage, flags, and default DB locations.
-- [ ] T023 Run `uv run pytest --cov=raindrop_enhancer --cov-report=term-missing` and ensure coverage ≥90% on new modules; address gaps.
-- [ ] T024 Run performance smoke tests via `uv run pytest tests/perf` and document results in plan/README if targets met.
+- [X] T023 Run `uv run pytest --cov=raindrop_enhancer --cov-report=term-missing` and ensure coverage ≥90% on new modules; address gaps.
+- [skipped] T024 Run performance smoke tests via `uv run pytest tests/perf` and document results in plan/README if targets met.
 - [ ] T025 Conduct manual quickstart validation following `specs/002-storage-and-sync/quickstart.md`; record findings (log or docs update).
 
 ## Dependencies & Execution Notes
