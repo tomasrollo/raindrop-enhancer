@@ -25,9 +25,9 @@
 - [X] T015 Register CLI entrypoint in `src/raindrop_enhancer/__init__.py` and `pyproject.toml` `[project.scripts]` so `uv run raindrop-export` is available; ensure package exports necessary symbols.
 
 ## Phase 3.4: Integration & Resilience
-- [ ] T016 Enhance client logging and telemetry in `src/raindrop_enhancer/api/raindrop_client.py` (structured logs, Rich console integration for verbose mode).
-- [ ] T017 Implement retry/throttle configuration using Gracy settings to honor 120 req/min and exponential backoff limits; expose observability hooks for retries.
-- [ ] T018 Wire CLI progress indicators and summary metrics in `src/raindrop_enhancer/cli.py` (collection/raindrop counters, elapsed time reporting, proper exit codes).
+- [X] T016 Enhance client logging and telemetry in `src/raindrop_enhancer/api/raindrop_client.py` (structured logs, Rich console integration for verbose mode).
+- [X] T017 Implement retry/throttle configuration using Gracy settings to honor 120 req/min and exponential backoff limits; expose observability hooks for retries.
+- [X] T018 Wire CLI progress indicators and summary metrics in `src/raindrop_enhancer/cli.py` (collection/raindrop counters, elapsed time reporting, proper exit codes).
 
 ## Phase 3.5: Polish & Validation
 - [ ] T019 [P] Add performance smoke test in `tests/perf/test_export_performance.py` simulating 10k raindrops to verify completion within 60s and document results.
