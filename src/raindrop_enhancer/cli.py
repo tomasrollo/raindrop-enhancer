@@ -27,11 +27,23 @@ def _open_output(path: str) -> TextIO:
 @click.option("--dry-run", is_flag=True, help="Validate without writing output")
 @click.option("--pretty", is_flag=True, help="Pretty-print JSON output")
 @click.option(
-    "--enforce-rate-limit/--no-enforce-rate-limit", default=False, help="Enforce spacing to respect default rate-limit"
+    "--enforce-rate-limit/--no-enforce-rate-limit",
+    default=False,
+    help="Enforce spacing to respect default rate-limit",
 )
-@click.option("--rate-limit", default=120, help="Requests per minute to honor when enforcing rate-limit")
+@click.option(
+    "--rate-limit",
+    default=120,
+    help="Requests per minute to honor when enforcing rate-limit",
+)
 def main(
-    output: str, quiet: bool, verbose: bool, dry_run: bool, pretty: bool, enforce_rate_limit: bool, rate_limit: int
+    output: str,
+    quiet: bool,
+    verbose: bool,
+    dry_run: bool,
+    pretty: bool,
+    enforce_rate_limit: bool,
+    rate_limit: int,
 ) -> None:
     """Export all active raindrops to JSON.
 
@@ -50,7 +62,11 @@ def main(
         click.echo("Missing RAINDROP_TOKEN in environment", err=True)
         sys.exit(2)
 
-    client = RaindropClient(token=token, enforce_rate_limit=enforce_rate_limit, rate_limit_per_min=rate_limit)
+    client = RaindropClient(
+        token=token,
+        enforce_rate_limit=enforce_rate_limit,
+        rate_limit_per_min=rate_limit,
+    )
 
     # Metrics / observability
     retries = []
@@ -71,7 +87,13 @@ def main(
         all_items = []
         start = None
         try:
-            from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+            from rich.progress import (
+                Progress,
+                SpinnerColumn,
+                TextColumn,
+                BarColumn,
+                TimeElapsedColumn,
+            )
 
             use_rich = True
         except Exception:
@@ -82,9 +104,14 @@ def main(
         start = time.time()
         if use_rich and not quiet:
             with Progress(
-                SpinnerColumn(), TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn()
+                SpinnerColumn(),
+                TextColumn("{task.description}"),
+                BarColumn(),
+                TimeElapsedColumn(),
             ) as progress:
-                task = progress.add_task("Fetching collections and raindrops", total=len(collections) or None)
+                task = progress.add_task(
+                    "Fetching collections and raindrops", total=len(collections) or None
+                )
                 for c in collections:
                     cid = c.get("_id") or c.get("id")
                     if cid is None:
@@ -107,7 +134,9 @@ def main(
 
         if dry_run:
             click.echo(f"Dry run: collected {len(active)} active raindrops")
-            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
+            click.echo(
+                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
+            )
             return
 
         ctx = nullcontext()
@@ -121,8 +150,12 @@ def main(
 
         # Summary metrics
         if not quiet:
-            click.echo(f"Exported {len(active)} raindrops from {len(collections)} collections")
-            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
+            click.echo(
+                f"Exported {len(active)} raindrops from {len(collections)} collections"
+            )
+            click.echo(
+                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
+            )
 
     finally:
         client.close()

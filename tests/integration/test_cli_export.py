@@ -15,7 +15,9 @@ def test_export_success_writes_json(monkeypatch, httpx_mock):
     monkeypatch.setenv("RAINDROP_TOKEN", "x")
     # Mock collections and raindrops
     httpx_mock.add_response(
-        method="GET", url="https://api.raindrop.io/rest/v1/collections", json={"items": [{"_id": 1}]}
+        method="GET",
+        url="https://api.raindrop.io/rest/v1/collections",
+        json={"items": [{"_id": 1}]},
     )
     httpx_mock.add_response(
         method="GET",

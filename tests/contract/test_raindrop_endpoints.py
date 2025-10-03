@@ -4,7 +4,9 @@ from raindrop_enhancer.api.raindrop_client import RaindropClient
 def test_list_collections_contract(httpx_mock):
     """Client should call collections endpoint and return items."""
     httpx_mock.add_response(
-        method="GET", url="https://api.raindrop.io/rest/v1/collections", json={"items": [{"_id": 1, "title": "c"}]}
+        method="GET",
+        url="https://api.raindrop.io/rest/v1/collections",
+        json={"items": [{"_id": 1, "title": "c"}]},
     )
     c = RaindropClient(token="x")
     items = c.list_collections()

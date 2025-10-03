@@ -88,7 +88,9 @@ class RaindropClient:
             Logger.debug("Enforcing rate limit: sleeping %.3fs", to_sleep)
             time.sleep(to_sleep)
 
-    def _request_with_retry(self, method: str, url: str, params: dict | None = None) -> httpx.Response:
+    def _request_with_retry(
+        self, method: str, url: str, params: dict | None = None
+    ) -> httpx.Response:
         attempts = 0
         delay = 1.0
         max_delay = 30.0
@@ -104,14 +106,21 @@ class RaindropClient:
                     Logger.exception("on_request callback raised an exception")
 
             Logger.debug("Requesting %s %s (attempt %d)", method, url, attempts)
-            resp = self._client.request(method, url, headers=self._headers(), params=params)
+            resp = self._client.request(
+                method, url, headers=self._headers(), params=params
+            )
             self._last_request_ts = time.monotonic()
 
             if resp.status_code == 429:
                 # Exponential backoff + jitter
                 jitter = random.uniform(0, 0.25 * delay)
                 to_sleep = min(delay + jitter, max_delay)
-                Logger.warning("Received 429 for %s, backing off %.2fs (attempt %d)", url, to_sleep, attempts)
+                Logger.warning(
+                    "Received 429 for %s, backing off %.2fs (attempt %d)",
+                    url,
+                    to_sleep,
+                    attempts,
+                )
                 if self.on_retry:
                     try:
                         self.on_retry(url, attempts, to_sleep)
