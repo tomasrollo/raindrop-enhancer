@@ -1,11 +1,11 @@
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from raindrop_enhancer.exporters.json_exporter import export_to_file
 from raindrop_enhancer.models import Raindrop
 
 
 def test_json_exporter_format():
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     r = Raindrop(
         id=1,
         collection_id=1,

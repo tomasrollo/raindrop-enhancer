@@ -13,6 +13,8 @@ import click
 from .api.raindrop_client import RaindropClient
 from .exporters.json_exporter import export_to_file
 from .models import Raindrop, Collection, filter_active_raindrops
+from .sync.orchestrator import Orchestrator
+from pathlib import Path
 
 
 def _open_output(path: str) -> TextIO:
@@ -201,3 +203,130 @@ def main(
 
 if __name__ == "__main__":
     main()
+
+
+@click.command()
+@click.option("--db-path", default=None, help="Path to SQLite DB file")
+@click.option(
+    "--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)"
+)
+@click.option("--dry-run", is_flag=True, help="Run without writing to DB")
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
+@click.option("--quiet", is_flag=True, help="Suppress non-error output")
+@click.option("--verbose", is_flag=True, help="Verbose output")
+@click.option(
+    "--enforce-rate-limit/--no-enforce-rate-limit",
+    default=True,
+    help="Enforce spacing to respect default rate-limit",
+)
+@click.option(
+    "--rate-limit",
+    default=120,
+    help="Requests per minute to honor when enforcing rate-limit",
+)
+def sync(
+    db_path: str,
+    full_refresh: bool,
+    dry_run: bool,
+    as_json: bool,
+    quiet: bool,
+    verbose: bool,
+    enforce_rate_limit: bool,
+    rate_limit: int,
+) -> None:
+    """Synchronize Raindrop archive into a local SQLite database."""
+    # token and dotenv loading similar to main
+    try:
+        from dotenv import load_dotenv
+    except Exception:
+        load_dotenv = None
+
+    import os, sys
+
+    if (
+        load_dotenv is not None
+        and os.path.exists(".env")
+        and "pytest" not in sys.modules
+    ):
+        load_dotenv()
+
+    token = os.getenv("RAINDROP_TOKEN")
+    if not token:
+        click.echo("Missing RAINDROP_TOKEN in environment", err=True)
+        sys.exit(2)
+
+    client = RaindropClient(
+        token=token,
+        enforce_rate_limit=enforce_rate_limit,
+        rate_limit_per_min=rate_limit,
+    )
+    # metrics
+    requests_made = 0
+    retries = []
+
+    # Configure logging based on flags (mirror `main` behavior)
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
+
+    def on_request(url: str) -> None:
+        nonlocal requests_made
+        requests_made += 1
+        if verbose and not quiet:
+            click.echo(f"Request: {url}", err=True)
+
+    def on_retry(url: str, attempt: int, delay: float) -> None:
+        retries.append((url, attempt, delay))
+        if verbose and not quiet:
+            click.echo(
+                f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True
+            )
+
+    client.on_request = on_request
+    client.on_retry = on_retry
+
+    from .sync.orchestrator import default_db_path
+
+    dbp = Path(db_path) if db_path else default_db_path()
+    orchestrator = Orchestrator(dbp, client)
+    try:
+        outcome = orchestrator.run(full_refresh=full_refresh, dry_run=dry_run)
+    except Exception as e:
+        click.echo(f"ERROR: {e}", err=True)
+        sys.exit(1)
+
+    # reflect client metrics in outcome if available
+    try:
+        outcome.requests_count = requests_made or outcome.requests_count
+        outcome.retries_count = len(retries) or outcome.retries_count
+    except Exception:
+        pass
+
+    if as_json:
+        import json
+
+        print(
+            json.dumps(
+                {
+                    "run_started_at": outcome.run_started_at.isoformat(),
+                    "run_finished_at": outcome.run_finished_at.isoformat(),
+                    "was_full_refresh": outcome.was_full_refresh,
+                    "new_links": outcome.new_links,
+                    "total_links": outcome.total_links,
+                    "db_path": str(outcome.db_path),
+                    "requests_made": outcome.requests_count,
+                    "retries": outcome.retries_count,
+                }
+            )
+        )
+    else:
+        if not quiet:
+            click.echo(
+                f"Synced {outcome.total_links} total links (+{outcome.new_links} new)"
+            )
+            click.echo(
+                f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}"
+            )

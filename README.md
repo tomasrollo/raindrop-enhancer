@@ -24,8 +24,53 @@ Run example:
 uv run raindrop-export --verbose --output my_raindrops.json
 ```
 
+Database-backed sync (new)
+
+The project includes a `raindrop-sync` command which persists raindrops into a local
+SQLite database and supports incremental runs via a recorded cursor.
+
+Default DB locations:
+
+- macOS: `~/Library/Application Support/raindrop_enhancer/raindrops.db`
+- Linux: `~/.local/share/raindrop_enhancer/raindrops.db`
+- Windows: `%APPDATA%\\raindrop_enhancer\\raindrops.db`
+
+Run a baseline sync:
+
+```bash
+uv run raindrop-sync --json
+```
+
+Use `--db-path` to override the DB file location for testing:
+
+```bash
+uv run raindrop-sync --db-path ./tmp/test.db --json
+```
+
 Troubleshooting
 
 - Missing token: create a `.env` file at the repository root with `RAINDROP_TOKEN=your_token_here`.
 - Rate limit errors (HTTP 429): the CLI retries with exponential backoff; repeated failures indicate an exhausted rate budget—try again later or reduce parallelism.
 - Empty output: run with `--dry-run --verbose` to inspect available collections and counts.
+
+Performance tests
+
+Small performance smoke tests live under `tests/perf/`. They are skipped by default and must be enabled via environment variables. Example invocations:
+
+```bash
+# Run baseline perf test (small dataset)
+ENABLE_PERF=1 PERF_COUNT=50 PERF_MAX_SECONDS=5 uv run pytest tests/perf/test_sync_baseline.py
+
+# Run incremental perf test (baseline + incremental)
+ENABLE_PERF=1 PERF_BASELINE_COUNT=50 PERF_INCREMENTAL_COUNT=10 PERF_INCREMENTAL_MAX_SECONDS=2 uv run pytest tests/perf/test_sync_incremental.py
+```
+
+Supported environment variables:
+- ENABLE_PERF: set to `1` to run perf tests (default: tests are skipped)
+- PERF_COUNT: number of synthetic items for baseline test (default: 1000)
+- PERF_MAX_SECONDS: allowed seconds for baseline insert (default: 2.0)
+- PERF_BASELINE_COUNT: baseline count for incremental test (default: 500)
+- PERF_INCREMENTAL_COUNT: incremental items to insert (default: 50)
+- PERF_INCREMENTAL_MAX_SECONDS: allowed seconds for incremental insert (default: 0.5)
+
+These are small smoke-tests intended for quick local validation. For CI or larger benchmarks, increase counts and record results separately.
