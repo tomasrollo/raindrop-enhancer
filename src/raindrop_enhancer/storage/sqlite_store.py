@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -39,6 +40,10 @@ CREATE TABLE IF NOT EXISTS sync_state (
 );
 PRAGMA user_version = 1;
 """
+
+
+Logger = logging.getLogger(__name__)
+Logger.debug("Started logging in sqlite_store.py")
 
 
 class SQLiteStore:
@@ -109,10 +114,29 @@ class SQLiteStore:
             return 0
         cur = self.conn.cursor()
         try:
+            # Determine which raindrop_ids already exist to provide deterministic
+            # inserted count and helpful debug information.
+            ids = [int(t[0]) for t in to_insert]
+            # Prepare a safe parameter list for IN clause
+            placeholders = ",".join(["?" for _ in ids]) if ids else ""
+            existing_ids = set()
+            if ids:
+                cur.execute(
+                    f"SELECT raindrop_id FROM raindrop_links WHERE raindrop_id IN ({placeholders})",
+                    ids,
+                )
+                rows = cur.fetchall()
+                existing_ids = {int(r[0]) for r in rows}
+
+            new_ids = [i for i in ids if i not in existing_ids]
+            Logger.debug(
+                "Inserting batch: total=%d, existing=%d, new=%d",
+                len(ids),
+                len(existing_ids),
+                len(new_ids),
+            )
+
             cur.execute("BEGIN")
-            # count before
-            cur.execute("SELECT COUNT(*) FROM raindrop_links")
-            before = int(cur.fetchone()[0])
             cur.executemany(
                 "INSERT OR IGNORE INTO raindrop_links (raindrop_id, collection_id, collection_title, title, url, created_at, synced_at, tags_json, raw_payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 to_insert,
@@ -120,7 +144,8 @@ class SQLiteStore:
             # count after (within same transaction)
             cur.execute("SELECT COUNT(*) FROM raindrop_links")
             after = int(cur.fetchone()[0])
-            inserted = after - before
+            # count before is after - number inserted by this exec
+            inserted = len(new_ids)
             self.conn.commit()
             return inserted
         except Exception:

@@ -10,6 +10,7 @@ import os
 import random
 import time
 from typing import Callable, Iterator, List, Optional
+from datetime import datetime, date, timezone
 
 import httpx
 
@@ -86,26 +87,63 @@ class RaindropClient:
         """
         page = 0
         perpage = 200
+
+        # Robust parser for timestamps -> timezone-aware datetimes
+        def _parse_ts_to_dt(value) -> Optional[datetime]:
+            if value is None:
+                return None
+            # Accept epoch seconds
+            try:
+                if isinstance(value, (int, float)):
+                    return datetime.fromtimestamp(int(value), tz=timezone.utc)
+            except Exception:
+                pass
+            s = str(value)
+            # Normalize trailing Z to +00:00 for fromisoformat
+            if s.endswith("Z"):
+                s = s[:-1] + "+00:00"
+            try:
+                dt = datetime.fromisoformat(s)
+                if dt.tzinfo is None:
+                    # Assume UTC for naive timestamps
+                    return dt.replace(tzinfo=timezone.utc)
+                return dt
+            except Exception:
+                return None
+
+        # Parse iso_cursor once for comparisons
+        iso_dt: Optional[datetime] = _parse_ts_to_dt(iso_cursor) if iso_cursor else None
         while True:
             url = f"{self.base_url}/raindrops/{collection_id}"
             params = {"page": page, "perpage": perpage, "sort": "created"}
             if iso_cursor:
-                # include a search param example; contract may refine exact syntax
-                params["search"] = f"created:>={iso_cursor} -is:archived -is:duplicate"
+                # The Raindrop API only accepts a YYYY-MM-DD date for the `created`
+                # search field and supports only '<' and '>' operators. Use the
+                # parsed iso_dt to derive a date; fall back to the raw date part
+                # if parsing failed.
+                if iso_dt:
+                    date_str = iso_dt.date().isoformat()
+                    params["search"] = f"created:>{date_str}"
+                else:
+                    try:
+                        date_str = iso_cursor.split("T")[0]
+                        params["search"] = f"created:>{date_str}"
+                    except Exception:
+                        Logger.debug(
+                            "Could not parse iso_cursor %r for search", iso_cursor
+                        )
             resp = self._request_with_retry("GET", url, params=params)
             data = resp.json()
             items = data.get("items", [])
+            Logger.debug("Fetched items: %d", len(items))
             if not items:
                 break
-            stop = False
             for it in items:
-                created = it.get("created")
-                if iso_cursor and created and str(created) <= iso_cursor:
-                    stop = True
-                    break
+                # Yield all returned items; the DB enforces uniqueness so
+                # duplicates won't be stored. This avoids client-side stopping
+                # which can be brittle when the API only supports date-granular
+                # search filters.
                 yield it
-            if stop:
-                break
             page += 1
 
     def _enforce_rate_limit_if_needed(self) -> None:

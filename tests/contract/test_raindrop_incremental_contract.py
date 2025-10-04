@@ -53,15 +53,18 @@ def test_raindrop_incremental_request_contract(monkeypatch):
     cursor = "2025-09-15T00:00:00Z"
     results = list(client.list_raindrops_since(1, iso_cursor=cursor))
 
-    # Should yield only the two items with created > cursor
-    assert [r["_id"] for r in results] == [1, 2]
+    # Client now yields all returned items (DB deduplication prevents duplicate storage)
+    assert [r["_id"] for r in results] == [1, 2, 3]
 
     # Validate query parameters used
     assert any(p.get("perpage") == 200 for p in calls), "perpage=200 not used"
     assert any(p.get("sort") == "created" for p in calls), "sort=created not used"
+    # The Raindrop API accepts only YYYY-MM-DD and '<'/'>' operators for created.
+    # Ensure the client sent a date-granular created:> filter matching the cursor date.
+    date_part = cursor.split("T")[0]
     assert any(
-        "search" in p and f"created:>={cursor}" in p.get("search", "") for p in calls
-    ), "search filter with cursor not present"
+        "search" in p and f"created:>{date_part}" in p.get("search", "") for p in calls
+    ), f"search filter with cursor date {date_part} not present"
     # Ensure pagination used (page parameter should increment from 0)
     assert calls[0].get("page", 0) == 0
     # second call should have page=1

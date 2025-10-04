@@ -10,6 +10,11 @@ from ..api.raindrop_client import RaindropClient
 from ..models import Raindrop, RaindropLink, SyncOutcome, SyncState
 from ..storage.sqlite_store import SQLiteStore
 from typing import Optional
+import logging
+
+
+Logger = logging.getLogger(__name__)
+Logger.debug("Started logging in orchestrator.py")
 
 
 def default_db_path() -> Path:
@@ -39,6 +44,7 @@ class Orchestrator:
 
     def run(self, full_refresh: bool = False, dry_run: bool = False) -> SyncOutcome:
         started = datetime.now(timezone.utc)
+        Logger.info("Sync started at %s", started.isoformat())
 
         # In dry-run mode we avoid creating or touching the DB file. This
         # ensures commands like `--dry-run --full-refresh` do not produce a
@@ -118,6 +124,9 @@ class Orchestrator:
             cid = coll.get("_id") or coll.get("id")
             if cid is None:
                 continue
+            Logger.info(
+                "Syncing collection: id=%s title=%s", cid, coll.get("title", "")
+            )
             iterator = self.client.list_raindrops_since(
                 int(cid), state.last_cursor_iso if state else None
             )
@@ -140,12 +149,23 @@ class Orchestrator:
                 if len(batch) >= 100:
                     if not dry_run:
                         inserted = self.store.insert_batch(batch)
+                        Logger.debug(
+                            "Inserted batch: batch_size=%d, inserted=%d",
+                            len(batch),
+                            inserted,
+                        )
                         total_inserted += inserted
                     batch = []
             if batch:
                 if not dry_run:
                     inserted = self.store.insert_batch(batch)
+                    Logger.debug(
+                        "Inserted final batch: batch_size=%d, inserted=%d",
+                        len(batch),
+                        inserted,
+                    )
                     total_inserted += inserted
+        Logger.debug("Total seen: %d, total inserted: %d", total_seen, total_inserted)
 
         # compute total_links
         total_links = 0
