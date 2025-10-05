@@ -94,7 +94,7 @@ Notes
 - Dry-run preview (no mutations):
 
   ```bash
-  uv run raindrop-enhancer capture-content --dry-run --limit 5 --verbose
+  uv run capture-content --dry-run --limit 5 --verbose
   ```
 
   Expected:
@@ -103,7 +103,7 @@ Notes
 - Execute capture (writes Markdown into DB):
 
   ```bash
-  uv run raindrop-enhancer capture-content --limit 100
+  uv run capture-content --limit 100
   ```
 
   Expected:
@@ -113,7 +113,7 @@ Notes
 - Refresh existing content (overwrite):
 
   ```bash
-  uv run raindrop-enhancer capture-content --refresh --limit 10
+  uv run capture-content --refresh --limit 10
   ```
 
   Expected:
