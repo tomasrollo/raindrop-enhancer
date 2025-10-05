@@ -330,3 +330,146 @@ def sync(
             click.echo(
                 f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}"
             )
+
+
+@click.command(name="capture-content")
+@click.option("--db-path", default=None, help="Path to SQLite DB file")
+@click.option("--limit", default=None, type=int, help="Maximum links to process")
+@click.option(
+    "--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done"
+)
+@click.option("--refresh", is_flag=True, help="Refresh existing captured content")
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
+@click.option("--timeout", default=10.0, type=float, help="Per-link fetch timeout (s)")
+@click.option("--quiet", is_flag=True, help="Suppress non-error output")
+@click.option("--verbose", is_flag=True, help="Verbose output")
+def capture_content(
+    db_path: str,
+    limit: int,
+    dry_run: bool,
+    refresh: bool,
+    as_json: bool,
+    timeout: float,
+    quiet: bool,
+    verbose: bool,
+):
+    """Capture Markdown content for saved links using Trafilatura.
+
+    Dry-run by default; will be wired to the full runner once implemented.
+    """
+    from .storage.sqlite_store import SQLiteStore
+    from .sync.orchestrator import default_db_path
+    from .content.fetcher import TrafilaturaFetcher
+    from .content.capture_runner import CaptureRunner
+
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
+
+    dbp = Path(db_path) if db_path else default_db_path()
+    store = SQLiteStore(dbp)
+    store.connect()
+
+    fetcher = TrafilaturaFetcher(timeout=timeout)
+    runner = CaptureRunner(store=store, fetcher=fetcher)
+
+    summary = runner.run(limit=limit, dry_run=dry_run, refresh=refresh)
+
+    attempts = getattr(summary, "attempts", []) or []
+    succeeded = sum(1 for a in attempts if a.status == "success")
+    processed = len(attempts)
+
+    if not as_json:
+        click.echo(f"Processed: {processed} links (dry_run={dry_run})")
+        for a in attempts[:20]:
+            click.echo(f" - [{a.status}] {a.url}")
+    else:
+        import json
+
+        print(
+            json.dumps(
+                {
+                    "session": {
+                        "started_at": summary.started_at.isoformat(),
+                        "completed_at": summary.completed_at.isoformat()
+                        if summary.completed_at
+                        else None,
+                    },
+                    "attempts": [a.__dict__ for a in attempts],
+                }
+            )
+        )
+
+    # Per-contract exit code: 1 when at least one link was processed and every attempt failed
+    if processed > 0 and all((a.status == "failed") for a in attempts):
+        raise SystemExit(1)
+
+
+@click.command(name="migrate")
+@click.option("--db-path", default=None, help="Path to SQLite DB file")
+@click.option(
+    "--target", default="content-markdown", help="Migration target identifier"
+)
+@click.option("--yes", is_flag=True, help="Apply migration without prompting")
+@click.option("--quiet", is_flag=True, help="Suppress non-error output")
+def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
+    """Run migrations on the local SQLite DB.
+
+    Currently supported target: `content-markdown` which adds columns required for
+    the capture-content feature. This command makes a backup before applying changes.
+    """
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    from .sync.orchestrator import default_db_path
+    from .storage.sqlite_store import SQLiteStore
+
+    dbp = Path(db_path) if db_path else default_db_path()
+
+    click.echo(f"Migration target: {target}")
+    click.echo(f"Database: {dbp}")
+
+    if target != "content-markdown":
+        click.echo(f"Unknown migration target: {target}", err=True)
+        raise SystemExit(2)
+
+    if not yes:
+        confirmed = click.confirm(
+            f"Proceed to migrate database at {dbp}? This will create a backup."
+        )
+        if not confirmed:
+            click.echo("Migration cancelled by user")
+            return
+
+    store = SQLiteStore(dbp)
+    # Create parent directory if missing and connect
+    try:
+        store.connect()
+    except Exception:
+        # Even if DB not present, connect ensures path exists and schema created
+        store = SQLiteStore(dbp)
+        store.connect()
+
+    # Backup DB if it exists on disk
+    try:
+        if dbp.exists():
+            bak = store.backup_db()
+            click.echo(f"Backup created: {bak}")
+            # backup_db closes the connection; reconnect before migration
+            store.connect()
+    except Exception as exc:
+        click.echo(f"Backup failed: {repr(exc)}", err=True)
+        raise SystemExit(1)
+
+    # Apply migration
+    try:
+        store._ensure_content_columns()
+        click.echo("Migration applied: content_markdown and related columns ensured.")
+    except Exception as exc:
+        click.echo(f"Migration failed: {repr(exc)}", err=True)
+        raise SystemExit(1)

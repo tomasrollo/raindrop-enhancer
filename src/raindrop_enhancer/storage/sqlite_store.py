@@ -82,6 +82,40 @@ class SQLiteStore:
         self.conn.commit()
         cur.close()
 
+    # --- Migration helpers -------------------------------------------------
+    def _ensure_content_columns(self) -> None:
+        """Ensure new columns for content capture exist; add them if missing.
+
+        This method is idempotent and safe to call on every connect.
+        """
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            cur.execute("PRAGMA table_info(raindrop_links)")
+            cols = {r[1] for r in cur.fetchall()}
+            to_add = []
+            if "content_markdown" not in cols:
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN content_markdown TEXT DEFAULT NULL"
+                )
+            if "content_fetched_at" not in cols:
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN content_fetched_at TEXT DEFAULT NULL"
+                )
+            if "content_source" not in cols:
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN content_source TEXT DEFAULT 'trafilatura'"
+                )
+
+            for stmt in to_add:
+                cur.execute(stmt)
+            if to_add:
+                # bump user_version to indicate migration
+                cur.execute("PRAGMA user_version = 2")
+                self.conn.commit()
+        finally:
+            cur.close()
+
     def quick_check(self) -> bool:
         """Run PRAGMA quick_check and return True if OK."""
         assert self.conn
@@ -90,6 +124,81 @@ class SQLiteStore:
             cur.execute("PRAGMA quick_check")
             rows = cur.fetchall()
             return all(r[0] == "ok" for r in rows)
+        finally:
+            cur.close()
+
+    # --- Content selection / update helpers -------------------------------
+    def select_uncaptured(self, limit: Optional[int] = None) -> List[tuple]:
+        """Return list of (raindrop_id, url) for links without content_markdown.
+
+        Ordered by synced_at ascending to pick oldest first.
+        """
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            q = "SELECT raindrop_id, url FROM raindrop_links WHERE content_markdown IS NULL ORDER BY synced_at"
+            try:
+                if limit:
+                    q = q + " LIMIT ?"
+                    cur.execute(q, (limit,))
+                else:
+                    cur.execute(q)
+            except sqlite3.OperationalError as e:
+                # Fallback for databases that don't have the content_* columns yet
+                msg = str(e).lower()
+                if "no such column" in msg:
+                    q2 = (
+                        "SELECT raindrop_id, url FROM raindrop_links ORDER BY synced_at"
+                    )
+                    if limit:
+                        q2 = q2 + " LIMIT ?"
+                        cur.execute(q2, (limit,))
+                    else:
+                        cur.execute(q2)
+                else:
+                    raise
+            return [(int(r[0]), r[1]) for r in cur.fetchall()]
+        finally:
+            cur.close()
+
+    def select_all_links(self, limit: Optional[int] = None) -> List[tuple]:
+        """Return list of (raindrop_id, url) for all links ordered by synced_at."""
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            q = "SELECT raindrop_id, url FROM raindrop_links ORDER BY synced_at"
+            if limit:
+                q = q + " LIMIT ?"
+                cur.execute(q, (limit,))
+            else:
+                cur.execute(q)
+            return [(int(r[0]), r[1]) for r in cur.fetchall()]
+        finally:
+            cur.close()
+
+    def update_content(
+        self, link_id: int, markdown: str, source: str = "trafilatura"
+    ) -> None:
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                "UPDATE raindrop_links SET content_markdown = ?, content_fetched_at = ?, content_source = ? WHERE raindrop_id = ?",
+                (markdown, datetime.now(timezone.utc).isoformat(), source, link_id),
+            )
+            self.conn.commit()
+        finally:
+            cur.close()
+
+    def clear_content_for_link(self, link_id: int) -> None:
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                "UPDATE raindrop_links SET content_markdown = NULL, content_fetched_at = NULL WHERE raindrop_id = ?",
+                (link_id,),
+            )
+            self.conn.commit()
         finally:
             cur.close()
 

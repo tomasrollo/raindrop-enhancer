@@ -88,3 +88,62 @@ Notes
 
   Expected:
   - Backup existing DB to `raindrops.db.bak`, recreate schema, and perform a baseline export.
+
+7. Capture content command (manual testing)
+
+- Dry-run preview (no mutations):
+
+  ```bash
+  uv run capture-content --dry-run --limit 5 --verbose
+  ```
+
+  Expected:
+  - Lists which links would be processed and exits with code 0.
+
+- Execute capture (writes Markdown into DB):
+
+  ```bash
+  uv run capture-content --limit 100
+  ```
+
+  Expected:
+  - Persists `content_markdown` and `content_fetched_at` for successfully captured links.
+  - Exits `0` when at least one link succeeded; exits `1` when all attempted links fail.
+
+- Refresh existing content (overwrite):
+
+  ```bash
+  uv run capture-content --refresh --limit 10
+  ```
+
+  Expected:
+  - Overwrites existing `content_markdown` fields for the targeted links.
+
+Migration
+
+If your DB predates this feature you must add the new columns. A one-off migration helper is available (Python API) until a `migrate` CLI command is added:
+
+```bash
+uv run python - <<'PY'
+from raindrop_enhancer.storage.sqlite_store import SQLiteStore
+from raindrop_enhancer.sync.orchestrator import default_db_path
+
+store = SQLiteStore(default_db_path())
+store.connect()
+store._ensure_content_columns()
+print('Migration applied')
+PY
+```
+
+After migration, validate columns exist:
+
+```bash
+uv run python - <<'PY'
+import sqlite3
+from raindrop_enhancer.sync.orchestrator import default_db_path
+
+db = default_db_path()
+conn = sqlite3.connect(db)
+print([r[1] for r in conn.execute("PRAGMA table_info(raindrop_links)")])
+PY
+```
