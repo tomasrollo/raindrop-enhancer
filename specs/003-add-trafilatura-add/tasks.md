@@ -34,21 +34,21 @@
 ```
 
 ## Tasks
-- [ ] T001 Update dependencies: add Trafilatura (and optional accelerator `cchardet`) in `pyproject.toml`, run `uv add`, `uv lock`, and `uv sync` to refresh the environment.
-- [ ] T002 Create synthetic capture fixtures in `tests/fixtures/content_links.json` (or similar) to provide predictable HTML/Markdown inputs for tests.
-- [ ] T003 [P] Author failing contract tests in `tests/contract/test_cli_content_capture.py` covering CLI options, JSON schema, exit codes, and `--timeout` handling.
-- [ ] T004 [P] Author failing integration tests in `tests/integration/test_cli_content_capture.py` for fresh capture, refresh flag, partial failure exit status, and dry-run behavior using a temporary sqlite DB.
-- [ ] T005 [P] Author failing unit tests in `tests/unit/test_content_fetcher.py` validating Trafilatura interactions (timeouts, metadata flags, retry classification) with patched `trafilatura.fetch_url`/`extract`.
-- [ ] T006 [P] Author failing unit tests in `tests/unit/test_sqlite_store_content.py` validating schema migration, new columns, selection of uncaptured links, and persistence of Markdown blobs.
-- [ ] T007 Extend `src/raindrop_enhancer/storage/sqlite_store.py` to add content columns, upgrade logic (user_version bump), selection helpers, and write/update methods for Markdown plus timestamps.
-- [ ] T008 Update data models in `src/raindrop_enhancer/models.py` to include content fields on `RaindropLink` (or companion dataclass) and introduce `LinkCaptureAttempt`/`ContentCaptureSession` helpers.
-- [ ] T009 Implement Trafilatura fetcher service in `src/raindrop_enhancer/content/fetcher.py` providing a reusable class/function that manages shared session, markdown extraction, timeouts, and retry classification.
-- [ ] T010 Implement capture runner/coordinator in `src/raindrop_enhancer/content/capture_runner.py` orchestrating selection of pending links, invoking the fetcher, applying refresh semantics, and building session/attempt summaries.
-- [ ] T011 Integrate new runner with the CLI by adding a `capture-content` command in `src/raindrop_enhancer/cli.py` (ensure Click group/entrypoint updates, JSON/human output parity, Rich formatting, logging, and CLI flags per contract).
+- [X] T001 Update dependencies: add Trafilatura (and optional accelerator `cchardet`) in `pyproject.toml`, run `uv add`, `uv lock`, and `uv sync` to refresh the environment.
+- [X] T002 Create synthetic capture fixtures in `tests/fixtures/content_links.json` (or similar) to provide predictable HTML/Markdown inputs for tests.
+- [X] T003 [P] Author failing contract tests in `tests/contract/test_cli_content_capture.py` covering CLI options, JSON schema, exit codes, and `--timeout` handling.
+- [X] T004 [P] Author failing integration tests in `tests/integration/test_cli_content_capture.py` for fresh capture, refresh flag, partial failure exit status, and dry-run behavior using a temporary sqlite DB.
+- [X] T005 [P] Author failing unit tests in `tests/unit/test_content_fetcher.py` validating Trafilatura interactions (timeouts, metadata flags, retry classification) with patched `trafilatura.fetch_url`/`extract`.
+- [X] T006 [P] Author failing unit tests in `tests/unit/test_sqlite_store_content.py` validating schema migration, new columns, selection of uncaptured links, and persistence of Markdown blobs.
+- [X] T007 Extend `src/raindrop_enhancer/storage/sqlite_store.py` to add content columns, upgrade logic (user_version bump), selection helpers, and write/update methods for Markdown plus timestamps.
+- [X] T008 Update data models in `src/raindrop_enhancer/models.py` to include content fields on `RaindropLink` (or companion dataclass) and introduce `LinkCaptureAttempt`/`ContentCaptureSession` helpers.
+- [X] T009 Implement Trafilatura fetcher service in `src/raindrop_enhancer/content/fetcher.py` providing a reusable class/function that manages shared session, markdown extraction, timeouts, and retry classification.
+- [X] T010 Implement capture runner/coordinator in `src/raindrop_enhancer/content/capture_runner.py` orchestrating selection of pending links, invoking the fetcher, applying refresh semantics, and building session/attempt summaries.
+- [X] T011 Integrate new runner with the CLI by adding a `capture-content` command in `src/raindrop_enhancer/cli.py` (ensure Click group/entrypoint updates, JSON/human output parity, Rich formatting, logging, and CLI flags per contract).
 - [ ] T012 [P] Add performance baseline tests in `tests/perf/test_content_capture.py` to validate p95/p99 timing goals across ~100 link fixtures (using fakes/mocks where appropriate).
 - [ ] T013 [P] Update documentation (`README.md`, `docs/manual-testing.md`, `specs/003-add-trafilatura-add/quickstart.md`) with usage instructions, CLI help snippet, and troubleshooting for the new command.
 - [ ] T014 Run formatting and lint gates (`uv run ruff check .`, `uv run ruff format`, `uv run mypy src`) ensuring no regressions.
-- [ ] T015 Run automated tests (`uv run pytest` across contract, unit, integration, perf suites) and capture results for the changelog/PR summary.
+- [X] T015 Run automated tests (`uv run pytest` across contract, unit, integration, perf suites) and capture results for the changelog/PR summary.
 - [ ] T016 Perform smoke tests: execute `uv run raindrop-enhancer capture-content` in dry-run and live modes against sample DB, verify Markdown persisted, and document observations.
 
 ## Dependencies

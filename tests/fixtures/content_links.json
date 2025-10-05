@@ -1,0 +1,14 @@
+[
+    {
+        "raindrop_id": 1,
+        "url": "https://example.org/article1",
+        "title": "Example Article 1",
+        "synced_at": "2025-10-01T00:00:00Z"
+    },
+    {
+        "raindrop_id": 2,
+        "url": "https://example.org/article2",
+        "title": "Example Article 2",
+        "synced_at": "2025-10-02T00:00:00Z"
+    }
+]

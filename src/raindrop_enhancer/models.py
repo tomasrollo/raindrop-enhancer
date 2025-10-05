@@ -62,9 +62,7 @@ class Raindrop:
         url = payload.get("link") or payload.get("url") or ""
         return Raindrop(
             id=int(payload.get("_id", 0)),
-            collection_id=int(
-                payload.get("collectionId", payload.get("collection_id", 0))
-            ),
+            collection_id=int(payload.get("collectionId", payload.get("collection_id", 0))),
             collection_title=collection_title,
             title=str(payload.get("title", "")),
             url=str(url),
@@ -87,6 +85,10 @@ class RaindropLink:
     synced_at: str  # ISO8601
     tags_json: str
     raw_payload: str
+    # New content fields
+    content_markdown: Optional[str] = None
+    content_fetched_at: Optional[str] = None
+    content_source: Optional[str] = None
 
     @staticmethod
     def from_raindrop(r: "Raindrop", synced_at: datetime) -> "RaindropLink":
@@ -101,6 +103,27 @@ class RaindropLink:
             tags_json=json.dumps(sorted(r.tags)),
             raw_payload=json.dumps({"id": r.id, "title": r.title, "url": r.url}),
         )
+
+
+@dataclass
+class LinkCaptureAttempt:
+    link_id: int
+    attempted_at: datetime
+    status: str  # success|skipped|failed
+    retry_count: int = 0
+    error_type: Optional[str] = None
+
+
+@dataclass
+class ContentCaptureSession:
+    started_at: datetime
+    completed_at: Optional[datetime]
+    links_processed: int
+    links_succeeded: int
+    links_skipped: int
+    links_failed: int
+    errors: Optional[List[dict]] = None
+    exit_code: int = 0
 
 
 @dataclass
