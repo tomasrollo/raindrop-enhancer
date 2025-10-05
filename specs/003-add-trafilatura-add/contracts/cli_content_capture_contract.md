@@ -2,7 +2,7 @@
 
 ## Command Synopsis
 ```
-uv run raindrop-enhancer capture-content [OPTIONS]
+uv run capture-content [OPTIONS]
 ```
 
 ## Description

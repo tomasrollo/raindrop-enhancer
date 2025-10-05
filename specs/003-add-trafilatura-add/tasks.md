@@ -49,7 +49,7 @@
 - [X] T013 [P] Update documentation (`README.md`, `docs/manual-testing.md`, `specs/003-add-trafilatura-add/quickstart.md`) with usage instructions, CLI help snippet, and troubleshooting for the new command.
 - [X] T014 Run formatting and lint gates (`uv run ruff check .`, `uv run ruff format`, `uv run mypy src`) ensuring no regressions.
 - [X] T015 Run automated tests (`uv run pytest` across contract, unit, integration, perf suites) and capture results for the changelog/PR summary.
-- [ ] T016 Perform smoke tests: execute `uv run raindrop-enhancer capture-content` in dry-run and live modes against sample DB, verify Markdown persisted, and document observations.
+- [ ] T016 Perform smoke tests: execute `uv run capture-content` in dry-run and live modes against sample DB, verify Markdown persisted, and document observations.
 
 ## Dependencies
 - T001 → T002-T016
@@ -75,5 +75,5 @@ Task: "T006 Author failing unit tests in tests/unit/test_sqlite_store_content.py
 - Use `uv run` for all commands per constitution.
 - Rich/Click output must remain deterministic for JSON mode.
 - Performance targets: p95 < 5s/link, p99 < 500ms overhead, RSS < 150MB.
-- Ensure new CLI command registers in entry points so `uv run raindrop-enhancer capture-content --help` works.
+- Ensure new CLI command registers in entry points so `uv run capture-content --help` works.
 - Document migration/backfill steps clearly in README/manual testing.

@@ -54,9 +54,9 @@ The project also includes a `capture-content` command to capture full-text Markd
 Basic usage:
 
 ```bash
-uv run raindrop-enhancer capture-content --dry-run --limit 10 --verbose
-uv run raindrop-enhancer capture-content --limit 100
-uv run raindrop-enhancer capture-content --refresh --limit 50
+uv run capture-content --dry-run --limit 10 --verbose
+uv run capture-content --limit 100
+uv run capture-content --refresh --limit 50
 ```
 
 Migration note

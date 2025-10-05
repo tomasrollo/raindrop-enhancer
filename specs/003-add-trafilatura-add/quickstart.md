@@ -42,23 +42,23 @@
 ## Run the Capture Command
 1. Dry-run preview (no mutations):
    ```bash
-   uv run raindrop-enhancer capture-content --dry-run --limit 5 --verbose
+   uv run capture-content --dry-run --limit 5 --verbose
    ```
    - Expect summary showing which links would be processed.
 2. Execute content capture:
    ```bash
-   uv run raindrop-enhancer capture-content --limit 100
+   uv run capture-content --limit 100
    ```
    - Command exits `0` when at least one link succeeded.
 3. Refresh existing content (explicit opt-in):
    ```bash
-   uv run raindrop-enhancer capture-content --refresh --limit 10
+   uv run capture-content --refresh --limit 10
    ```
 
 ## JSON Output Workflow
 1. Capture with machine-readable summary:
    ```bash
-   uv run raindrop-enhancer capture-content --json --limit 10 > capture_results.json
+   uv run capture-content --json --limit 10 > capture_results.json
    ```
 2. Inspect failures:
    ```bash
