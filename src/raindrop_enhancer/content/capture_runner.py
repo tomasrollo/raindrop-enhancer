@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+from datetime import timezone
 from typing import Iterable, List, Optional
 
 from raindrop_enhancer.storage.sqlite_store import SQLiteStore
@@ -30,17 +31,22 @@ class CaptureRunner:
         self.store = store
         self.fetcher = fetcher
 
-    def run(self, limit: Optional[int] = None, dry_run: bool = True, refresh: bool = False) -> SessionSummary:
-        started = datetime.datetime.utcnow()
+    def run(
+        self, limit: Optional[int] = None, dry_run: bool = True, refresh: bool = False
+    ) -> SessionSummary:
+        started = datetime.datetime.now(timezone.utc)
         attempts: List[LinkAttemptSummary] = []
 
         if refresh:
             links = self.store.select_all_links(limit=limit)
         else:
             links = self.store.select_uncaptured(limit=limit)
+
         for link in links:
             if dry_run:
-                attempts.append(LinkAttemptSummary(link_id=link[0], url=link[1], status="skipped"))
+                attempts.append(
+                    LinkAttemptSummary(link_id=link[0], url=link[1], status="skipped")
+                )
                 continue
 
             if refresh:
@@ -49,7 +55,9 @@ class CaptureRunner:
             result: FetchResult = self.fetcher.fetch(link[1])
             if result.markdown:
                 self.store.update_content(link_id=link[0], markdown=result.markdown)
-                attempts.append(LinkAttemptSummary(link_id=link[0], url=link[1], status="success"))
+                attempts.append(
+                    LinkAttemptSummary(link_id=link[0], url=link[1], status="success")
+                )
             else:
                 attempts.append(
                     LinkAttemptSummary(
@@ -61,4 +69,8 @@ class CaptureRunner:
                     )
                 )
 
-        return SessionSummary(started_at=started, completed_at=datetime.datetime.utcnow(), attempts=attempts)
+        return SessionSummary(
+            started_at=started,
+            completed_at=datetime.datetime.now(timezone.utc),
+            attempts=attempts,
+        )

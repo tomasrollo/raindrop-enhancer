@@ -31,6 +31,7 @@ asyncio_mode = "auto"
 raindrop-export = "raindrop_enhancer.cli:main"
 raindrop-sync = "raindrop_enhancer.cli:sync"
 capture-content = "raindrop_enhancer.cli:capture_content"
+raindrop-migrate = "raindrop_enhancer.cli:migrate"
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]

@@ -15,9 +15,17 @@
 4. Verify sqlite database exists or run the existing sync command to populate baseline links.
 
 ## Database Migration
-1. Run schema migration to add Markdown columns (implementation task will supply command). For now, validate migration script once available:
+1. Run schema migration to add Markdown columns. Currently there's a one-off helper available via the Python API until a `migrate` CLI is added:
    ```bash
-   uv run raindrop-enhancer migrate --target content-markdown
+   uv run python - <<'PY'
+   from raindrop_enhancer.storage.sqlite_store import SQLiteStore
+   from raindrop_enhancer.sync.orchestrator import default_db_path
+
+   store = SQLiteStore(default_db_path())
+   store.connect()
+   store._ensure_content_columns()
+   print('Migration applied')
+   PY
    ```
 2. Confirm columns exist:
    ```bash

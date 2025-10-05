@@ -30,10 +30,17 @@ def test_capture_fresh_dry_run(tmp_path: Path, monkeypatch):
     store = SQLiteStore(db)
     store.connect()
     # insert two links
-    store.insert_batch([_make_link(1, "https://example.org/a1"), _make_link(2, "https://example.org/a2")])
+    store.insert_batch(
+        [
+            _make_link(1, "https://example.org/a1"),
+            _make_link(2, "https://example.org/a2"),
+        ]
+    )
 
     runner = CliRunner()
-    result = runner.invoke(capture_content, ["--db-path", str(db), "--dry-run", "--limit", "2"])
+    result = runner.invoke(
+        capture_content, ["--db-path", str(db), "--dry-run", "--limit", "2"]
+    )
     assert result.exit_code == 0
     assert "Processed" in result.output or "Dry run" in result.output
 
@@ -59,11 +66,15 @@ def test_capture_refresh_and_persistence(tmp_path: Path, monkeypatch):
 
             return R()
 
-    monkeypatch.setattr("raindrop_enhancer.content.fetcher.TrafilaturaFetcher", FakeFetcher)
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.fetcher.TrafilaturaFetcher", FakeFetcher
+    )
 
     runner = CliRunner()
     # run with refresh to overwrite content
-    result = runner.invoke(capture_content, ["--db-path", str(db), "--limit", "1", "--refresh"])
+    result = runner.invoke(
+        capture_content, ["--db-path", str(db), "--limit", "1", "--refresh"]
+    )
     assert result.exit_code == 0
 
     # verify DB was updated
@@ -80,7 +91,12 @@ def test_partial_failure_exit_code_all_fail(tmp_path: Path, monkeypatch):
     db = tmp_path / "test.db"
     store = SQLiteStore(db)
     store.connect()
-    store.insert_batch([_make_link(4, "https://example.org/a4"), _make_link(5, "https://example.org/a5")])
+    store.insert_batch(
+        [
+            _make_link(4, "https://example.org/a4"),
+            _make_link(5, "https://example.org/a5"),
+        ]
+    )
 
     class AlwaysFailFetcher:
         def __init__(self, timeout=10.0):
@@ -93,7 +109,9 @@ def test_partial_failure_exit_code_all_fail(tmp_path: Path, monkeypatch):
 
             return R()
 
-    monkeypatch.setattr("raindrop_enhancer.content.fetcher.TrafilaturaFetcher", AlwaysFailFetcher)
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.fetcher.TrafilaturaFetcher", AlwaysFailFetcher
+    )
 
     runner = CliRunner()
     result = runner.invoke(capture_content, ["--db-path", str(db), "--limit", "2"])

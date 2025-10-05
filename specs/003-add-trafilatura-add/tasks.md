@@ -46,8 +46,8 @@
 - [X] T010 Implement capture runner/coordinator in `src/raindrop_enhancer/content/capture_runner.py` orchestrating selection of pending links, invoking the fetcher, applying refresh semantics, and building session/attempt summaries.
 - [X] T011 Integrate new runner with the CLI by adding a `capture-content` command in `src/raindrop_enhancer/cli.py` (ensure Click group/entrypoint updates, JSON/human output parity, Rich formatting, logging, and CLI flags per contract).
 - [ ] T012 [P] Add performance baseline tests in `tests/perf/test_content_capture.py` to validate p95/p99 timing goals across ~100 link fixtures (using fakes/mocks where appropriate).
-- [ ] T013 [P] Update documentation (`README.md`, `docs/manual-testing.md`, `specs/003-add-trafilatura-add/quickstart.md`) with usage instructions, CLI help snippet, and troubleshooting for the new command.
-- [ ] T014 Run formatting and lint gates (`uv run ruff check .`, `uv run ruff format`, `uv run mypy src`) ensuring no regressions.
+- [X] T013 [P] Update documentation (`README.md`, `docs/manual-testing.md`, `specs/003-add-trafilatura-add/quickstart.md`) with usage instructions, CLI help snippet, and troubleshooting for the new command.
+- [X] T014 Run formatting and lint gates (`uv run ruff check .`, `uv run ruff format`, `uv run mypy src`) ensuring no regressions.
 - [X] T015 Run automated tests (`uv run pytest` across contract, unit, integration, perf suites) and capture results for the changelog/PR summary.
 - [ ] T016 Perform smoke tests: execute `uv run raindrop-enhancer capture-content` in dry-run and live modes against sample DB, verify Markdown persisted, and document observations.
 

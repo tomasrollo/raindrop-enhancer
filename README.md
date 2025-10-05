@@ -47,6 +47,44 @@ Use `--db-path` to override the DB file location for testing:
 uv run raindrop-sync --db-path ./tmp/test.db --json
 ```
 
+Capture content (new)
+
+The project also includes a `capture-content` command to capture full-text Markdown for saved links and persist it into the SQLite database.
+
+Basic usage:
+
+```bash
+uv run raindrop-enhancer capture-content --dry-run --limit 10 --verbose
+uv run raindrop-enhancer capture-content --limit 100
+uv run raindrop-enhancer capture-content --refresh --limit 50
+```
+
+Migration note
+
+You can add the `content_markdown` and `content_fetched_at` columns to your existing DB either via a one-off Python helper or via the new `migrate` CLI command that performs a safe backup and applies the schema change.
+
+Run the migrate command (recommended):
+
+```bash
+uv run raindrop-migrate --db-path ~/.local/share/raindrop_enhancer/raindrops.db --target content-markdown --yes
+```
+
+This will create a timestamped backup of the DB and then ensure the `content_markdown`, `content_fetched_at`, and `content_source` columns exist. Omit `--yes` to be prompted for confirmation.
+
+Alternative (Python one-off):
+
+```bash
+uv run python - <<'PY'
+from raindrop_enhancer.storage.sqlite_store import SQLiteStore
+from raindrop_enhancer.sync.orchestrator import default_db_path
+
+store = SQLiteStore(default_db_path())
+store.connect()
+store._ensure_content_columns()
+print('Migration applied')
+PY
+```
+
 Troubleshooting
 
 - Missing token: create a `.env` file at the repository root with `RAINDROP_TOKEN=your_token_here`.

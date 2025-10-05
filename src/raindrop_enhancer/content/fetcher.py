@@ -35,8 +35,12 @@ class TrafilaturaFetcher:
             # Some implementations accept timeout positionally; pass it positionally for compatibility.
             downloaded = trafilatura.fetch_url(url, self.timeout)
             if not downloaded:
-                return FetchResult(url=url, markdown=None, error="no_content", retry_count=0)
+                return FetchResult(
+                    url=url, markdown=None, error="no_content", retry_count=0
+                )
             markdown = trafilatura.extract(downloaded, output_format="markdown")
             return FetchResult(url=url, markdown=markdown, error=None)
-        except Exception as exc:  # pragma: no cover - allow exceptions to surface in integration
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - allow exceptions to surface in integration
             return FetchResult(url=url, markdown=None, error=str(exc))
