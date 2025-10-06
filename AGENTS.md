@@ -26,9 +26,9 @@ tests/
 Python 3.13 (per `pyproject.toml` / uv defaults): Follow standard conventions
 
 ## Recent Changes
+- 004-handle-youtube-videos: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 - 003-add-trafilatura-add: Added Python 3.13 + Click, Rich, Gracy/httpx, Trafilatura, sqlite3, python-dotenv
 - 002-storage-and-sync: Added Python 3.13 (uv-managed per `pyproject.toml`) + Gracy/httpx (Raindrop API), Click (CLI), Rich (console UX), sqlite3 stdlib (embedded DB), python-dotenv (env loading)
-- 001-build-a-small: Added Python 3.13 (per `pyproject.toml` / uv defaults) + Gracy (HTTP client), httpx (indirect via Gracy), Click (CLI), Rich (console rendering), python-dotenv or uv-managed dotenv support (verify)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
