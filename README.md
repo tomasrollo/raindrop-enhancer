@@ -59,6 +59,36 @@ uv run capture-content --limit 100
 uv run capture-content --refresh --limit 50
 ```
 
+YouTube links
+
+The capture pipeline now includes special handling for YouTube video links. When a saved link is identified as a YouTube video the system will use `yt-dlp` to fetch the video's title and description (without downloading the full video) and save it into the `content_markdown` column as Markdown:
+
+```
+# {title}
+
+{description}
+```
+
+Behavior and notes:
+- Dependency: `yt-dlp` is added to the project's dependencies. Ensure your environment can install native wheels if required.
+- Timeout: the YouTube metadata fetch uses a 30-second timeout to avoid long hangs.
+- Failure modes:
+	- If the link is not a YouTube URL, capture falls back to Trafilatura as before.
+	- If the video is unavailable, the extractor records a short error code and the capture attempt is marked as failed; you can inspect the CLI output for details.
+	- If fetching metadata fails, the capture flow will not write partial/invalid content. Placeholder codes used in the data model include:
+		- `[YOUTUBE VIDEO NOT AVAILABLE]` when the video is known to be missing (integration-dependent)
+		- `[YOUTUBE METADATA FETCH FAILED]` when the extractor fails for other reasons
+
+CLI examples (YouTube capture)
+
+```bash
+# Dry-run: show what would be processed (no DB writes)
+uv run capture-content --db-path ./tmp/test.db --dry-run --limit 10
+
+# Process links and persist fetched YouTube metadata when present
+uv run capture-content --db-path ./tmp/raindrops.db --limit 200
+```
+
 Migration note
 
 You can add the `content_markdown` and `content_fetched_at` columns to your existing DB either via a one-off Python helper or via the new `migrate` CLI command that performs a safe backup and applies the schema change.

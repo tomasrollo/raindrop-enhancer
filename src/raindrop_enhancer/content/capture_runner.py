@@ -7,6 +7,7 @@ from typing import Iterable, List, Optional
 
 from raindrop_enhancer.storage.sqlite_store import SQLiteStore
 from .fetcher import TrafilaturaFetcher, FetchResult
+from .youtube_extractor import is_youtube_url, extract_metadata
 
 
 @dataclasses.dataclass
@@ -105,26 +106,57 @@ class CaptureRunner:
                 # runner writes fresh content regardless of previous state.
                 self.store.clear_content_for_link(link_id=link[0])
 
-            # Perform the fetch and persist successful results.
-            result: FetchResult = self.fetcher.fetch(link[1])
-            if result.markdown:
-                # Persist the captured markdown. The store layer is responsible
-                # for updating timestamps and source metadata.
-                self.store.update_content(link_id=link[0], markdown=result.markdown)
-                attempts.append(
-                    LinkAttemptSummary(link_id=link[0], url=link[1], status="success")
-                )
-            else:
-                # On failure, keep the error text for debugging and CLI output.
-                attempts.append(
-                    LinkAttemptSummary(
-                        link_id=link[0],
-                        url=link[1],
-                        status="failed",
-                        error_type=result.error,
-                        error_message=result.error,
+            # If URL is a YouTube link, prefer the YouTube extractor which
+            # uses `yt-dlp` to fetch title/description without downloading video.
+            if is_youtube_url(link[1]):
+                meta = extract_metadata(link[1], timeout=30.0)
+                if meta.get("title") or meta.get("description"):
+                    # Format as Markdown per data-model: '# {title}\n\n{description}'
+                    title = meta.get("title") or ""
+                    desc = meta.get("description") or ""
+                    markdown = f"# {title}\n\n{desc}".strip()
+                    self.store.update_content(
+                        link_id=link[0], markdown=markdown, source="yt-dlp"
                     )
-                )
+                    attempts.append(
+                        LinkAttemptSummary(
+                            link_id=link[0], url=link[1], status="success"
+                        )
+                    )
+                else:
+                    # Map extractor errors to failed attempt entries with short codes
+                    attempts.append(
+                        LinkAttemptSummary(
+                            link_id=link[0],
+                            url=link[1],
+                            status="failed",
+                            error_type=meta.get("error"),
+                            error_message=meta.get("error"),
+                        )
+                    )
+            else:
+                # Perform the fetch and persist successful results using Trafilatura.
+                result: FetchResult = self.fetcher.fetch(link[1])
+                if result.markdown:
+                    # Persist the captured markdown. The store layer is responsible
+                    # for updating timestamps and source metadata.
+                    self.store.update_content(link_id=link[0], markdown=result.markdown)
+                    attempts.append(
+                        LinkAttemptSummary(
+                            link_id=link[0], url=link[1], status="success"
+                        )
+                    )
+                else:
+                    # On failure, keep the error text for debugging and CLI output.
+                    attempts.append(
+                        LinkAttemptSummary(
+                            link_id=link[0],
+                            url=link[1],
+                            status="failed",
+                            error_type=result.error,
+                            error_message=result.error,
+                        )
+                    )
 
         return SessionSummary(
             started_at=started,
