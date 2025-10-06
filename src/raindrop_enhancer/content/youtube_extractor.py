@@ -15,7 +15,7 @@ import importlib
 
 # Very small subset of youtube hostnames and short URL forms
 _YOUTUBE_RE = re.compile(
-    r"^(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)(?P<id>[A-Za-z0-9_-]{4,})",
+    r"^(?:https?://)?(?:www\.|m\.)?(?:youtube\.com/(?:watch\?v=|shorts/)|youtu\.be/)(?P<id>[A-Za-z0-9_-]{4,})",
     re.IGNORECASE,
 )
 

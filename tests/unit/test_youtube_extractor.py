@@ -6,6 +6,8 @@ from raindrop_enhancer.content import youtube_extractor as ye
 def test_is_youtube_url_positive():
     assert ye.is_youtube_url("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     assert ye.is_youtube_url("https://youtu.be/dQw4w9WgXcQ")
+    assert ye.is_youtube_url("https://youtube.com/shorts/UfmuUJ4Eah0")
+    assert ye.is_youtube_url("https://m.youtube.com/shorts/UfmuUJ4Eah0")
 
 
 def test_is_youtube_url_negative():
