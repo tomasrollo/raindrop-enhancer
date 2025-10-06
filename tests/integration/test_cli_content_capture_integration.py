@@ -118,3 +118,132 @@ def test_partial_failure_exit_code_all_fail(tmp_path: Path, monkeypatch):
 
     # TDD expectation: when all fail, exit_code should be 1 per contract. If not implemented yet, this will fail.
     assert result.exit_code == 1
+
+
+def test_youtube_capture_integration(tmp_path: Path, monkeypatch):
+    """End-to-end: insert a YouTube link, stub extractor, run capture, assert markdown persisted."""
+    db = tmp_path / "test.db"
+    store = SQLiteStore(db)
+    store.connect()
+
+    # Insert a YouTube link
+    store.insert_batch([_make_link(100, "https://youtu.be/dQw4w9WgXcQ")])
+    # Ensure content columns exist so update_content will work
+    store._ensure_content_columns()
+
+    # Patch the extractor to return known metadata
+    def fake_extract(url: str, timeout: float = 30.0):
+        return {
+            "title": "Fake YT Title",
+            "description": "Fake description",
+            "error": None,
+        }
+
+    # Patch both the extractor module and the reference used by capture_runner
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.youtube_extractor.extract_metadata", fake_extract
+    )
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.capture_runner.extract_metadata", fake_extract
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(capture_content, ["--db-path", str(db), "--limit", "1"])
+    assert result.exit_code == 0
+
+    cur = store.conn.cursor()
+    cur.execute("SELECT content_markdown FROM raindrop_links WHERE raindrop_id = 100")
+    row = cur.fetchone()
+    assert row is not None
+    assert row[0] == "# Fake YT Title\n\nFake description"
+    # also assert content_source column was set to yt-dlp
+    cur.execute("SELECT content_source FROM raindrop_links WHERE raindrop_id = 100")
+    row2 = cur.fetchone()
+    assert row2 is not None
+    assert row2[0] == "yt-dlp"
+
+
+def test_youtube_unavailable_failure_mode(tmp_path: Path, monkeypatch):
+    """When extractor reports 'unavailable', capture should mark attempt failed and not write content."""
+    db = tmp_path / "test.db"
+    store = SQLiteStore(db)
+    store.connect()
+    store.insert_batch([_make_link(200, "https://youtu.be/UNAVAILABLE")])
+    store._ensure_content_columns()
+
+    def fake_extract_unavailable(url: str, timeout: float = 30.0):
+        return {"title": None, "description": None, "error": "unavailable"}
+
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.youtube_extractor.extract_metadata",
+        fake_extract_unavailable,
+    )
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.capture_runner.extract_metadata",
+        fake_extract_unavailable,
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        capture_content, ["--db-path", str(db), "--limit", "1", "--json"]
+    )
+    # When all processed links fail, CLI raises SystemExit(1)
+    assert result.exit_code == 1
+    import json
+
+    payload = json.loads(result.output)
+    attempts = payload.get("attempts", [])
+    assert len(attempts) == 1
+    assert attempts[0]["status"] == "failed"
+    assert attempts[0]["error_type"] == "unavailable"
+
+    cur = store.conn.cursor()
+    cur.execute("SELECT content_markdown FROM raindrop_links WHERE raindrop_id = 200")
+    row = cur.fetchone()
+    # Should remain NULL / None in DB
+    assert row is not None
+    assert row[0] is None
+
+
+def test_youtube_fetcher_missing_failure_mode(tmp_path: Path, monkeypatch):
+    """When yt-dlp is missing or extractor reports an import error, capture should fail cleanly and not write content."""
+    db = tmp_path / "test.db"
+    store = SQLiteStore(db)
+    store.connect()
+    store.insert_batch([_make_link(201, "https://youtu.be/MISSINGYT")])
+    store._ensure_content_columns()
+
+    def fake_extract_missing(url: str, timeout: float = 30.0):
+        return {
+            "title": None,
+            "description": None,
+            "error": "yt_dlp_missing:ImportError",
+        }
+
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.youtube_extractor.extract_metadata",
+        fake_extract_missing,
+    )
+    monkeypatch.setattr(
+        "raindrop_enhancer.content.capture_runner.extract_metadata",
+        fake_extract_missing,
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        capture_content, ["--db-path", str(db), "--limit", "1", "--json"]
+    )
+    assert result.exit_code == 1
+    import json
+
+    payload = json.loads(result.output)
+    attempts = payload.get("attempts", [])
+    assert len(attempts) == 1
+    assert attempts[0]["status"] == "failed"
+    assert attempts[0]["error_type"].startswith("yt_dlp_missing")
+
+    cur = store.conn.cursor()
+    cur.execute("SELECT content_markdown FROM raindrop_links WHERE raindrop_id = 201")
+    row = cur.fetchone()
+    assert row is not None
+    assert row[0] is None
