@@ -55,7 +55,9 @@ class SQLiteStore:
     def connect(self) -> None:
         if self.conn is not None:
             return
-        self.conn = sqlite3.connect(str(self.path), detect_types=sqlite3.PARSE_DECLTYPES)
+        self.conn = sqlite3.connect(
+            str(self.path), detect_types=sqlite3.PARSE_DECLTYPES
+        )
         self.conn.row_factory = sqlite3.Row
         self._enable_wal()
         self._ensure_schema()
@@ -93,11 +95,17 @@ class SQLiteStore:
             cols = {r[1] for r in cur.fetchall()}
             to_add = []
             if "content_markdown" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN content_markdown TEXT DEFAULT NULL")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN content_markdown TEXT DEFAULT NULL"
+                )
             if "content_fetched_at" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN content_fetched_at TEXT DEFAULT NULL")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN content_fetched_at TEXT DEFAULT NULL"
+                )
             if "content_source" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN content_source TEXT DEFAULT 'trafilatura'")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN content_source TEXT DEFAULT 'trafilatura'"
+                )
 
             for stmt in to_add:
                 cur.execute(stmt)
@@ -121,9 +129,13 @@ class SQLiteStore:
             cols = {r[1] for r in cur.fetchall()}
             to_add = []
             if "auto_tags_json" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_json TEXT DEFAULT NULL")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN auto_tags_json TEXT DEFAULT NULL"
+                )
             if "auto_tags_meta_json" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_meta_json TEXT DEFAULT NULL")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN auto_tags_meta_json TEXT DEFAULT NULL"
+                )
 
             for stmt in to_add:
                 cur.execute(stmt)
@@ -165,7 +177,9 @@ class SQLiteStore:
                 # Fallback for databases that don't have the content_* columns yet
                 msg = str(e).lower()
                 if "no such column" in msg:
-                    q2 = "SELECT raindrop_id, url FROM raindrop_links ORDER BY synced_at"
+                    q2 = (
+                        "SELECT raindrop_id, url FROM raindrop_links ORDER BY synced_at"
+                    )
                     if limit:
                         q2 = q2 + " LIMIT ?"
                         cur.execute(q2, (limit,))
@@ -192,7 +206,9 @@ class SQLiteStore:
         finally:
             cur.close()
 
-    def update_content(self, link_id: int, markdown: str, source: str = "trafilatura") -> None:
+    def update_content(
+        self, link_id: int, markdown: str, source: str = "trafilatura"
+    ) -> None:
         assert self.conn
         cur = self.conn.cursor()
         try:
@@ -321,7 +337,9 @@ class SQLiteStore:
         bak = self.path.with_suffix(self.path.suffix + ".bak")
         # if bak exists, append timestamp
         if bak.exists():
-            bak = self.path.with_suffix(self.path.suffix + f".{int(datetime.now(timezone.utc).timestamp())}.bak")
+            bak = self.path.with_suffix(
+                self.path.suffix + f".{int(datetime.now(timezone.utc).timestamp())}.bak"
+            )
         from shutil import copy2
 
         self.close()
@@ -386,9 +404,13 @@ class SQLiteStore:
             cols = {r[1] for r in cur.fetchall()}
             to_add = []
             if "auto_tags_json" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_json TEXT DEFAULT NULL")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN auto_tags_json TEXT DEFAULT NULL"
+                )
             if "auto_tags_meta_json" not in cols:
-                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_meta_json TEXT DEFAULT NULL")
+                to_add.append(
+                    "ALTER TABLE raindrop_links ADD COLUMN auto_tags_meta_json TEXT DEFAULT NULL"
+                )
             for stmt in to_add:
                 cur.execute(stmt)
 

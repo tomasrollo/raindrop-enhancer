@@ -63,7 +63,9 @@ class Raindrop:
         url = payload.get("link") or payload.get("url") or ""
         return Raindrop(
             id=int(payload.get("_id", 0)),
-            collection_id=int(payload.get("collectionId", payload.get("collection_id", 0))),
+            collection_id=int(
+                payload.get("collectionId", payload.get("collection_id", 0))
+            ),
             collection_title=collection_title,
             title=str(payload.get("title", "")),
             url=str(url),

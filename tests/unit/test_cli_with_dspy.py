@@ -38,7 +38,9 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     from raindrop_enhancer.storage.sqlite_store import SQLiteStore as StoreClass
 
     monkeypatch.setattr(
-        StoreClass, "fetch_untagged_links", lambda self, limit=None: [(1, "Title", "http://", "content")]
+        StoreClass,
+        "fetch_untagged_links",
+        lambda self, limit=None: [(1, "Title", "http://", "content")],
     )
 
     # Run CLI with dry-run to avoid writing DB
@@ -47,7 +49,9 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     runner = CliRunner()
     db_file = tmp_path / "links.db"
 
-    result = runner.invoke(cli_mod.tags, ["generate", "--db-path", str(db_file), "--dry-run"])
+    result = runner.invoke(
+        cli_mod.tags, ["generate", "--db-path", str(db_file), "--dry-run"]
+    )
 
     assert result.exit_code == 0
     # Output should indicate at least one processed link

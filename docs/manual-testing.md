@@ -146,4 +146,36 @@ db = default_db_path()
 conn = sqlite3.connect(db)
 print([r[1] for r in conn.execute("PRAGMA table_info(raindrop_links)")])
 PY
+
+8. Auto-tagging (LLM-assisted) manual validation
+
+- Prerequisites: set `RAINDROP_DSPY_MODEL` in `.env` or export in your shell. For dry-run testing you can omit it.
+
+- Dry-run (no DB writes):
+
+```bash
+uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+```
+
+Expected:
+- CLI lists how many links will be processed and prints a short summary. Exit code 0.
+
+- Persist generated tags (writes to DB):
+
+```bash
+uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db
+```
+
+Expected:
+- Writes `auto_tags_json` and `auto_tags_meta_json` columns in `raindrop_links` for updated links. Exit code 0 on success.
+
+- CI-style run (fail if DSPy missing):
+
+```bash
+uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --require-dspy --json
+```
+
+Expected:
+- If `RAINDROP_DSPY_MODEL` is missing, exit code 2 and an error message. If present, emits JSON summary.
+
 ```

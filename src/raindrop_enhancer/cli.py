@@ -60,7 +60,11 @@ def main(
     except Exception:
         load_dotenv = None
 
-    if load_dotenv is not None and os.path.exists(".env") and "pytest" not in sys.modules:
+    if (
+        load_dotenv is not None
+        and os.path.exists(".env")
+        and "pytest" not in sys.modules
+    ):
         load_dotenv()
 
     token = os.getenv("RAINDROP_TOKEN")
@@ -113,7 +117,9 @@ def main(
         # returned by the /collections endpoint. Ensure we always fetch it
         # so users don't miss those raindrops.
         try:
-            has_unsorted = any((c.get("_id") == -1 or c.get("id") == -1) for c in collections)
+            has_unsorted = any(
+                (c.get("_id") == -1 or c.get("id") == -1) for c in collections
+            )
         except Exception:
             has_unsorted = False
         if not has_unsorted:
@@ -143,7 +149,9 @@ def main(
                 BarColumn(),
                 TimeElapsedColumn(),
             ) as progress:
-                task = progress.add_task("Fetching collections and raindrops", total=len(collections) or None)
+                task = progress.add_task(
+                    "Fetching collections and raindrops", total=len(collections) or None
+                )
                 for c in collections:
                     cid = c.get("_id") or c.get("id")
                     if cid is None:
@@ -166,7 +174,9 @@ def main(
 
         if dry_run:
             click.echo(f"Dry run: collected {len(active)} active raindrops")
-            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
+            click.echo(
+                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
+            )
             return
 
         ctx = nullcontext()
@@ -180,8 +190,12 @@ def main(
 
         # Summary metrics
         if not quiet:
-            click.echo(f"Exported {len(active)} raindrops from {len(collections)} collections")
-            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
+            click.echo(
+                f"Exported {len(active)} raindrops from {len(collections)} collections"
+            )
+            click.echo(
+                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
+            )
 
     finally:
         client.close()
@@ -193,7 +207,9 @@ if __name__ == "__main__":
 
 @click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option("--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)")
+@click.option(
+    "--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)"
+)
 @click.option("--dry-run", is_flag=True, help="Run without writing to DB")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
@@ -227,7 +243,11 @@ def sync(
 
     import os, sys
 
-    if load_dotenv is not None and os.path.exists(".env") and "pytest" not in sys.modules:
+    if (
+        load_dotenv is not None
+        and os.path.exists(".env")
+        and "pytest" not in sys.modules
+    ):
         load_dotenv()
 
     token = os.getenv("RAINDROP_TOKEN")
@@ -261,7 +281,9 @@ def sync(
     def on_retry(url: str, attempt: int, delay: float) -> None:
         retries.append((url, attempt, delay))
         if verbose and not quiet:
-            click.echo(f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True)
+            click.echo(
+                f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True
+            )
 
     client.on_request = on_request
     client.on_retry = on_retry
@@ -302,14 +324,20 @@ def sync(
         )
     else:
         if not quiet:
-            click.echo(f"Synced {outcome.total_links} total links (+{outcome.new_links} new)")
-            click.echo(f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}")
+            click.echo(
+                f"Synced {outcome.total_links} total links (+{outcome.new_links} new)"
+            )
+            click.echo(
+                f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}"
+            )
 
 
 @click.command(name="capture-content")
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
-@click.option("--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done")
+@click.option(
+    "--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done"
+)
 @click.option("--refresh", is_flag=True, help="Refresh existing captured content")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--timeout", default=10.0, type=float, help="Per-link fetch timeout (s)")
@@ -366,7 +394,9 @@ def capture_content(
                 {
                     "session": {
                         "started_at": summary.started_at.isoformat(),
-                        "completed_at": summary.completed_at.isoformat() if summary.completed_at else None,
+                        "completed_at": summary.completed_at.isoformat()
+                        if summary.completed_at
+                        else None,
                     },
                     "attempts": [a.__dict__ for a in attempts],
                 }
@@ -380,7 +410,9 @@ def capture_content(
 
 @click.command(name="migrate")
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option("--target", default="content-markdown", help="Migration target identifier")
+@click.option(
+    "--target", default="content-markdown", help="Migration target identifier"
+)
 @click.option("--yes", is_flag=True, help="Apply migration without prompting")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
@@ -407,7 +439,9 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
         raise SystemExit(2)
 
     if not yes:
-        confirmed = click.confirm(f"Proceed to migrate database at {dbp}? This will create a backup.")
+        confirmed = click.confirm(
+            f"Proceed to migrate database at {dbp}? This will create a backup."
+        )
         if not confirmed:
             click.echo("Migration cancelled by user")
             return
@@ -449,12 +483,20 @@ def tags():
 @tags.command(name="generate")
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
-@click.option("--dry-run", is_flag=True, help="Do not persist tags; just show what would be done")
+@click.option(
+    "--dry-run", is_flag=True, help="Do not persist tags; just show what would be done"
+)
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 @click.option("--verbose", is_flag=True, help="Verbose output")
-@click.option("--require-dspy", is_flag=True, help="Require DSPy configuration; fail if missing")
-@click.option("--fail-on-error", is_flag=True, help="Exit non-zero if any individual link generation failed")
+@click.option(
+    "--require-dspy", is_flag=True, help="Require DSPy configuration; fail if missing"
+)
+@click.option(
+    "--fail-on-error",
+    is_flag=True,
+    help="Exit non-zero if any individual link generation failed",
+)
 def tags_generate(
     db_path: str,
     limit: int,
@@ -522,15 +564,28 @@ def tags_generate(
 
     # Run with Rich progress when available and not quiet
     try:
-        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+        from rich.progress import (
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            BarColumn,
+            TimeElapsedColumn,
+        )
 
         use_rich = True
     except Exception:
         use_rich = False
 
     if use_rich and not quiet and not as_json:
-        with Progress(SpinnerColumn(), TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn()) as progress:
-            task = progress.add_task(f"Tagging links (model={model_name})", total=total or None)
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            TimeElapsedColumn(),
+        ) as progress:
+            task = progress.add_task(
+                f"Tagging links (model={model_name})", total=total or None
+            )
 
             def on_result_with_advance(e: dict) -> None:
                 _on_result(e)

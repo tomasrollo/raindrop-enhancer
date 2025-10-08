@@ -54,7 +54,13 @@ def normalize_tags(raw: Iterable[str], limit: int = 10) -> List[GeneratedTag]:
 
 
 class TagGenerationRunner:
-    def __init__(self, predictor: PredictorWrapper, *, model_name: Optional[str] = None, batch_size: int = 1):
+    def __init__(
+        self,
+        predictor: PredictorWrapper,
+        *,
+        model_name: Optional[str] = None,
+        batch_size: int = 1,
+    ):
         """Runner to generate tags for items.
 
         predictor: PredictorWrapper instance
@@ -65,7 +71,9 @@ class TagGenerationRunner:
         self.model_name = model_name or "unknown"
         self.batch_size = max(1, int(batch_size))
 
-    def run_batch(self, items: Iterable[tuple], on_result: Optional[Callable[[dict], None]] = None) -> List[tuple]:
+    def run_batch(
+        self, items: Iterable[tuple], on_result: Optional[Callable[[dict], None]] = None
+    ) -> List[tuple]:
         """Process items and return list of (raindrop_id, tags_json_str, meta_json_str).
 
         items: Iterable of (raindrop_id, title, url, content_markdown)
@@ -101,7 +109,13 @@ class TagGenerationRunner:
 
                 results.append(res)
                 if on_result:
-                    on_result({"raindrop_id": res[0], "tags_json": res[1], "meta_json": res[2]})
+                    on_result(
+                        {
+                            "raindrop_id": res[0],
+                            "tags_json": res[1],
+                            "meta_json": res[2],
+                        }
+                    )
 
         for item in items:
             batch.append(item)

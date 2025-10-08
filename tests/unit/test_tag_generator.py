@@ -26,7 +26,9 @@ def normalize_tags(values):
 
 
 def test_title_case_and_truncation():
-    src = ["this is a very long tag that should be truncated because it exceeds the limit"]
+    src = [
+        "this is a very long tag that should be truncated because it exceeds the limit"
+    ]
     out = normalize_tags(src)
     assert out[0] == "This Is A Very Long Tag That Should Be T"
 

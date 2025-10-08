@@ -15,7 +15,9 @@ def test_require_dspy_exits_when_missing(monkeypatch, tmp_path):
 
     db_file = tmp_path / "links.db"
 
-    result = runner.invoke(tags, ["generate", "--require-dspy", "--dry-run", "--db-path", str(db_file)])
+    result = runner.invoke(
+        tags, ["generate", "--require-dspy", "--dry-run", "--db-path", str(db_file)]
+    )
 
     # CLI should exit with code 2 when DSPy required but missing
     assert result.exit_code == 2

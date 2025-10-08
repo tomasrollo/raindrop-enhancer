@@ -133,6 +133,34 @@ ENABLE_PERF=1 PERF_COUNT=50 PERF_MAX_SECONDS=5 uv run pytest tests/perf/test_syn
 ENABLE_PERF=1 PERF_BASELINE_COUNT=50 PERF_INCREMENTAL_COUNT=10 PERF_INCREMENTAL_MAX_SECONDS=2 uv run pytest tests/perf/test_sync_incremental.py
 ```
 
+Auto-tagging (LLM-assisted)
+
+You can generate auto-tags for links stored in the local SQLite DB using the DSPy-powered tag generator.
+
+Basic dry-run (no DB writes):
+
+```bash
+uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+```
+
+Persist generated tags (writes to DB):
+
+```bash
+uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db
+```
+
+Important flags:
+- `--require-dspy`: fail immediately if DSPy is not configured (useful for CI/production to avoid fallback fake predictor)
+- `--fail-on-error`: return non-zero exit code (4) if any individual link generation failed
+- `--json`: print a JSON summary (suitable for CI parsing)
+
+Exit codes:
+- `0` — success
+- `2` — DSPy required but not configured (when `--require-dspy` is used)
+- `3` — persistence/write failure when saving generated tags
+- `4` — per-link generation failures when `--fail-on-error` is used
+
+
 Supported environment variables:
 - ENABLE_PERF: set to `1` to run perf tests (default: tests are skipped)
 - PERF_COUNT: number of synthetic items for baseline test (default: 1000)
