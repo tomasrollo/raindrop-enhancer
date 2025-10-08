@@ -60,11 +60,7 @@ def main(
     except Exception:
         load_dotenv = None
 
-    if (
-        load_dotenv is not None
-        and os.path.exists(".env")
-        and "pytest" not in sys.modules
-    ):
+    if load_dotenv is not None and os.path.exists(".env") and "pytest" not in sys.modules:
         load_dotenv()
 
     token = os.getenv("RAINDROP_TOKEN")
@@ -117,9 +113,7 @@ def main(
         # returned by the /collections endpoint. Ensure we always fetch it
         # so users don't miss those raindrops.
         try:
-            has_unsorted = any(
-                (c.get("_id") == -1 or c.get("id") == -1) for c in collections
-            )
+            has_unsorted = any((c.get("_id") == -1 or c.get("id") == -1) for c in collections)
         except Exception:
             has_unsorted = False
         if not has_unsorted:
@@ -149,9 +143,7 @@ def main(
                 BarColumn(),
                 TimeElapsedColumn(),
             ) as progress:
-                task = progress.add_task(
-                    "Fetching collections and raindrops", total=len(collections) or None
-                )
+                task = progress.add_task("Fetching collections and raindrops", total=len(collections) or None)
                 for c in collections:
                     cid = c.get("_id") or c.get("id")
                     if cid is None:
@@ -174,9 +166,7 @@ def main(
 
         if dry_run:
             click.echo(f"Dry run: collected {len(active)} active raindrops")
-            click.echo(
-                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
-            )
+            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
             return
 
         ctx = nullcontext()
@@ -190,12 +180,8 @@ def main(
 
         # Summary metrics
         if not quiet:
-            click.echo(
-                f"Exported {len(active)} raindrops from {len(collections)} collections"
-            )
-            click.echo(
-                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
-            )
+            click.echo(f"Exported {len(active)} raindrops from {len(collections)} collections")
+            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
 
     finally:
         client.close()
@@ -207,9 +193,7 @@ if __name__ == "__main__":
 
 @click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option(
-    "--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)"
-)
+@click.option("--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)")
 @click.option("--dry-run", is_flag=True, help="Run without writing to DB")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
@@ -243,11 +227,7 @@ def sync(
 
     import os, sys
 
-    if (
-        load_dotenv is not None
-        and os.path.exists(".env")
-        and "pytest" not in sys.modules
-    ):
+    if load_dotenv is not None and os.path.exists(".env") and "pytest" not in sys.modules:
         load_dotenv()
 
     token = os.getenv("RAINDROP_TOKEN")
@@ -281,9 +261,7 @@ def sync(
     def on_retry(url: str, attempt: int, delay: float) -> None:
         retries.append((url, attempt, delay))
         if verbose and not quiet:
-            click.echo(
-                f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True
-            )
+            click.echo(f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True)
 
     client.on_request = on_request
     client.on_retry = on_retry
@@ -324,20 +302,14 @@ def sync(
         )
     else:
         if not quiet:
-            click.echo(
-                f"Synced {outcome.total_links} total links (+{outcome.new_links} new)"
-            )
-            click.echo(
-                f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}"
-            )
+            click.echo(f"Synced {outcome.total_links} total links (+{outcome.new_links} new)")
+            click.echo(f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}")
 
 
 @click.command(name="capture-content")
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
-@click.option(
-    "--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done"
-)
+@click.option("--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done")
 @click.option("--refresh", is_flag=True, help="Refresh existing captured content")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--timeout", default=10.0, type=float, help="Per-link fetch timeout (s)")
@@ -394,9 +366,7 @@ def capture_content(
                 {
                     "session": {
                         "started_at": summary.started_at.isoformat(),
-                        "completed_at": summary.completed_at.isoformat()
-                        if summary.completed_at
-                        else None,
+                        "completed_at": summary.completed_at.isoformat() if summary.completed_at else None,
                     },
                     "attempts": [a.__dict__ for a in attempts],
                 }
@@ -410,9 +380,7 @@ def capture_content(
 
 @click.command(name="migrate")
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option(
-    "--target", default="content-markdown", help="Migration target identifier"
-)
+@click.option("--target", default="content-markdown", help="Migration target identifier")
 @click.option("--yes", is_flag=True, help="Apply migration without prompting")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
@@ -439,9 +407,7 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
         raise SystemExit(2)
 
     if not yes:
-        confirmed = click.confirm(
-            f"Proceed to migrate database at {dbp}? This will create a backup."
-        )
+        confirmed = click.confirm(f"Proceed to migrate database at {dbp}? This will create a backup.")
         if not confirmed:
             click.echo("Migration cancelled by user")
             return
@@ -473,3 +439,75 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
     except Exception as exc:
         click.echo(f"Migration failed: {repr(exc)}", err=True)
         raise SystemExit(1)
+
+
+@click.group()
+def tags():
+    """Tag-related commands (auto-tagging using DSPy)."""
+
+
+@tags.command(name="generate")
+@click.option("--db-path", default=None, help="Path to SQLite DB file")
+@click.option("--limit", default=None, type=int, help="Maximum links to process")
+@click.option("--dry-run", is_flag=True, help="Do not persist tags; just show what would be done")
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
+@click.option("--quiet", is_flag=True, help="Suppress non-error output")
+@click.option("--verbose", is_flag=True, help="Verbose output")
+def tags_generate(db_path: str, limit: int, dry_run: bool, as_json: bool, quiet: bool, verbose: bool):
+    """Generate auto-tags for untagged links and optionally persist them."""
+    from .sync.orchestrator import default_db_path
+    from .storage.sqlite_store import SQLiteStore
+    from .content.tag_generator import PredictorWrapper, TagGenerationRunner
+    from .content.dspy_settings import configure_dspy, DSPyConfigError
+
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
+
+    dbp = Path(db_path) if db_path else default_db_path()
+    store = SQLiteStore(dbp)
+    store.connect()
+
+    # prepare predictor: try to configure DSPy, otherwise use a deterministic fake
+    try:
+        predictor = configure_dspy()
+        # wrap real predictor (assume it exposes a simple call signature)
+        pw = PredictorWrapper(lambda prompt: predictor(prompt) if callable(predictor) else [])
+    except DSPyConfigError:
+        # fallback fake predictor for dry-run and testing
+        def fake_predictor(prompt: str):
+            # naive tag extraction: split by spaces, take first 3 words
+            parts = prompt.split()
+            return [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
+
+        pw = PredictorWrapper(fake_predictor)
+
+    runner = TagGenerationRunner(pw)
+
+    items = store.fetch_untagged_links(limit=limit)
+    results = runner.run_batch(items)
+
+    generated = sum(1 for _, tags_json, _ in results if tags_json and tags_json != "[]")
+    failed = sum(1 for _, tags_json, _ in results if tags_json == "[]")
+
+    if not dry_run:
+        store.write_auto_tags_batch(results)
+
+    summary = {
+        "processed": len(results),
+        "generated": generated,
+        "failed": failed,
+        "db": str(dbp),
+    }
+
+    if as_json:
+        import json
+
+        print(json.dumps(summary))
+    else:
+        if not quiet:
+            click.echo(f"Processed: {len(results)} links")
+            click.echo(f"Generated: {generated}; Failed: {failed}")

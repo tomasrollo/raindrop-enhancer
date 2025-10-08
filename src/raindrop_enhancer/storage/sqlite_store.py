@@ -55,9 +55,7 @@ class SQLiteStore:
     def connect(self) -> None:
         if self.conn is not None:
             return
-        self.conn = sqlite3.connect(
-            str(self.path), detect_types=sqlite3.PARSE_DECLTYPES
-        )
+        self.conn = sqlite3.connect(str(self.path), detect_types=sqlite3.PARSE_DECLTYPES)
         self.conn.row_factory = sqlite3.Row
         self._enable_wal()
         self._ensure_schema()
@@ -95,23 +93,43 @@ class SQLiteStore:
             cols = {r[1] for r in cur.fetchall()}
             to_add = []
             if "content_markdown" not in cols:
-                to_add.append(
-                    "ALTER TABLE raindrop_links ADD COLUMN content_markdown TEXT DEFAULT NULL"
-                )
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN content_markdown TEXT DEFAULT NULL")
             if "content_fetched_at" not in cols:
-                to_add.append(
-                    "ALTER TABLE raindrop_links ADD COLUMN content_fetched_at TEXT DEFAULT NULL"
-                )
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN content_fetched_at TEXT DEFAULT NULL")
             if "content_source" not in cols:
-                to_add.append(
-                    "ALTER TABLE raindrop_links ADD COLUMN content_source TEXT DEFAULT 'trafilatura'"
-                )
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN content_source TEXT DEFAULT 'trafilatura'")
 
             for stmt in to_add:
                 cur.execute(stmt)
             if to_add:
                 # bump user_version to indicate migration
                 cur.execute("PRAGMA user_version = 2")
+                self.conn.commit()
+        finally:
+            cur.close()
+
+    def _ensure_tagging_columns(self) -> None:
+        """Ensure columns for auto-generated tags exist on raindrop_links.
+
+        Adds `auto_tags_json` and `auto_tags_meta_json` as nullable TEXT columns.
+        This method is idempotent and will bump PRAGMA user_version to 3 when applied.
+        """
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            cur.execute("PRAGMA table_info(raindrop_links)")
+            cols = {r[1] for r in cur.fetchall()}
+            to_add = []
+            if "auto_tags_json" not in cols:
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_json TEXT DEFAULT NULL")
+            if "auto_tags_meta_json" not in cols:
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_meta_json TEXT DEFAULT NULL")
+
+            for stmt in to_add:
+                cur.execute(stmt)
+            if to_add:
+                # bump user_version to indicate migration applied
+                cur.execute("PRAGMA user_version = 3")
                 self.conn.commit()
         finally:
             cur.close()
@@ -147,9 +165,7 @@ class SQLiteStore:
                 # Fallback for databases that don't have the content_* columns yet
                 msg = str(e).lower()
                 if "no such column" in msg:
-                    q2 = (
-                        "SELECT raindrop_id, url FROM raindrop_links ORDER BY synced_at"
-                    )
+                    q2 = "SELECT raindrop_id, url FROM raindrop_links ORDER BY synced_at"
                     if limit:
                         q2 = q2 + " LIMIT ?"
                         cur.execute(q2, (limit,))
@@ -176,9 +192,7 @@ class SQLiteStore:
         finally:
             cur.close()
 
-    def update_content(
-        self, link_id: int, markdown: str, source: str = "trafilatura"
-    ) -> None:
+    def update_content(self, link_id: int, markdown: str, source: str = "trafilatura") -> None:
         assert self.conn
         cur = self.conn.cursor()
         try:
@@ -307,9 +321,7 @@ class SQLiteStore:
         bak = self.path.with_suffix(self.path.suffix + ".bak")
         # if bak exists, append timestamp
         if bak.exists():
-            bak = self.path.with_suffix(
-                self.path.suffix + f".{int(datetime.now(timezone.utc).timestamp())}.bak"
-            )
+            bak = self.path.with_suffix(self.path.suffix + f".{int(datetime.now(timezone.utc).timestamp())}.bak")
         from shutil import copy2
 
         self.close()
@@ -322,5 +334,72 @@ class SQLiteStore:
         try:
             cur.execute("SELECT COUNT(*) FROM raindrop_links")
             return int(cur.fetchone()[0])
+        finally:
+            cur.close()
+
+    # --- Tagging helpers -------------------------------------------------
+    def fetch_untagged_links(self, limit: Optional[int] = None) -> List[tuple]:
+        """Return list of (raindrop_id, title, url, content_markdown) for links with no auto_tags_json.
+
+        Ordered by synced_at ascending.
+        """
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            # Inspect columns to handle older DBs without migration columns
+            cur.execute("PRAGMA table_info(raindrop_links)")
+            cols = {r[1] for r in cur.fetchall()}
+
+            select_fields = ["raindrop_id", "title", "url"]
+            if "content_markdown" in cols:
+                select_fields.append("content_markdown")
+            else:
+                select_fields.append("NULL as content_markdown")
+
+            # If auto_tags_json doesn't exist, treat all rows as untagged
+            if "auto_tags_json" in cols:
+                where = "auto_tags_json IS NULL"
+            else:
+                where = "1=1"
+
+            q = f"SELECT {', '.join(select_fields)} FROM raindrop_links WHERE {where} ORDER BY synced_at"
+            if limit:
+                q = q + " LIMIT ?"
+                cur.execute(q, (limit,))
+            else:
+                cur.execute(q)
+
+            return [(int(r[0]), r[1], r[2], r[3]) for r in cur.fetchall()]
+        finally:
+            cur.close()
+
+    def write_auto_tags_batch(self, entries: List[tuple]) -> None:
+        """Write auto_tags_json and auto_tags_meta_json for multiple links in a single transaction.
+
+        entries: List of (raindrop_id, auto_tags_json_str, auto_tags_meta_json_str)
+        """
+        assert self.conn
+        cur = self.conn.cursor()
+        try:
+            # Ensure tagging columns exist (safe to call multiple times)
+            cur.execute("PRAGMA table_info(raindrop_links)")
+            cols = {r[1] for r in cur.fetchall()}
+            to_add = []
+            if "auto_tags_json" not in cols:
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_json TEXT DEFAULT NULL")
+            if "auto_tags_meta_json" not in cols:
+                to_add.append("ALTER TABLE raindrop_links ADD COLUMN auto_tags_meta_json TEXT DEFAULT NULL")
+            for stmt in to_add:
+                cur.execute(stmt)
+
+            cur.execute("BEGIN")
+            cur.executemany(
+                "UPDATE raindrop_links SET auto_tags_json = ?, auto_tags_meta_json = ? WHERE raindrop_id = ?",
+                [(e[1], e[2], e[0]) for e in entries],
+            )
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
         finally:
             cur.close()
