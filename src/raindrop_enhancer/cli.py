@@ -453,12 +453,23 @@ def tags():
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 @click.option("--verbose", is_flag=True, help="Verbose output")
-def tags_generate(db_path: str, limit: int, dry_run: bool, as_json: bool, quiet: bool, verbose: bool):
+@click.option("--require-dspy", is_flag=True, help="Require DSPy configuration; fail if missing")
+@click.option("--fail-on-error", is_flag=True, help="Exit non-zero if any individual link generation failed")
+def tags_generate(
+    db_path: str,
+    limit: int,
+    dry_run: bool,
+    as_json: bool,
+    quiet: bool,
+    verbose: bool,
+    require_dspy: bool,
+    fail_on_error: bool,
+):
     """Generate auto-tags for untagged links and optionally persist them."""
     from .sync.orchestrator import default_db_path
     from .storage.sqlite_store import SQLiteStore
     from .content.tag_generator import PredictorWrapper, TagGenerationRunner
-    from .content.dspy_settings import configure_dspy, DSPyConfigError
+    from .content.dspy_settings import configure_dspy, get_dspy_model, DSPyConfigError
 
     if quiet:
         logging.basicConfig(level=logging.WARNING)
@@ -474,40 +485,99 @@ def tags_generate(db_path: str, limit: int, dry_run: bool, as_json: bool, quiet:
     # prepare predictor: try to configure DSPy, otherwise use a deterministic fake
     try:
         predictor = configure_dspy()
-        # wrap real predictor (assume it exposes a simple call signature)
-        pw = PredictorWrapper(lambda prompt: predictor(prompt) if callable(predictor) else [])
-    except DSPyConfigError:
+        model_name = get_dspy_model()
+        # predictor is a callable prompt -> list[str]
+        pw = PredictorWrapper(predictor)
+    except DSPyConfigError as e:
+        model_name = "unknown"
+        if require_dspy:
+            click.echo(f"DSPy configuration required but missing: {e}", err=True)
+            raise SystemExit(2)
+
         # fallback fake predictor for dry-run and testing
         def fake_predictor(prompt: str):
-            # naive tag extraction: split by spaces, take first 3 words
+            # naive tag extraction: split by spaces, take first 2-word tokens
             parts = prompt.split()
             return [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
 
         pw = PredictorWrapper(fake_predictor)
 
-    runner = TagGenerationRunner(pw)
+    runner = TagGenerationRunner(pw, model_name=model_name, batch_size=5)
 
     items = store.fetch_untagged_links(limit=limit)
-    results = runner.run_batch(items)
 
-    generated = sum(1 for _, tags_json, _ in results if tags_json and tags_json != "[]")
-    failed = sum(1 for _, tags_json, _ in results if tags_json == "[]")
+    # Prepare progress reporting and result collection
+    total = len(items)
+    collected: list[dict] = []
+    counters = {"processed": 0, "generated": 0, "failed": 0}
 
-    if not dry_run:
-        store.write_auto_tags_batch(results)
+    def _on_result(entry: dict) -> None:
+        # entry: {"raindrop_id", "tags_json", "meta_json"}
+        collected.append(entry)
+        counters["processed"] += 1
+        if entry.get("tags_json") and entry.get("tags_json") != "[]":
+            counters["generated"] += 1
+        else:
+            counters["failed"] += 1
+
+    # Run with Rich progress when available and not quiet
+    try:
+        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+
+        use_rich = True
+    except Exception:
+        use_rich = False
+
+    if use_rich and not quiet and not as_json:
+        with Progress(SpinnerColumn(), TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn()) as progress:
+            task = progress.add_task(f"Tagging links (model={model_name})", total=total or None)
+
+            def on_result_with_advance(e: dict) -> None:
+                _on_result(e)
+                progress.update(task, advance=1)
+
+            runner.run_batch(items, on_result=on_result_with_advance)
+    else:
+        # No rich available or quiet requested: run without progress
+        runner.run_batch(items, on_result=_on_result)
+
+    # Persist if not dry-run
+    if not dry_run and collected:
+        tuples = [(c["raindrop_id"], c["tags_json"], c["meta_json"]) for c in collected]
+        try:
+            store.write_auto_tags_batch(tuples)
+        except Exception as exc:
+            click.echo(f"Failed to persist auto-tags: {exc}", err=True)
+            raise SystemExit(3)
 
     summary = {
-        "processed": len(results),
-        "generated": generated,
-        "failed": failed,
+        "processed": counters["processed"],
+        "generated": counters["generated"],
+        "failed": counters["failed"],
         "db": str(dbp),
+        "model": model_name,
     }
 
     if as_json:
         import json
 
         print(json.dumps(summary))
-    else:
-        if not quiet:
-            click.echo(f"Processed: {len(results)} links")
-            click.echo(f"Generated: {generated}; Failed: {failed}")
+        if fail_on_error and counters["failed"] > 0:
+            raise SystemExit(4)
+        return
+
+    # Human-readable summary
+    if not quiet:
+        click.echo(
+            f"Processed: {summary['processed']} links (generated={summary['generated']}, failed={summary['failed']})"
+        )
+        click.echo(f"Model: {summary['model']} DB: {summary['db']}")
+        # show up to 10 sample items
+        if collected:
+            click.echo("Sample results:")
+            for c in collected[:10]:
+                tags = c.get("tags_json") or "[]"
+                click.echo(f" - [{c['raindrop_id']}] tags={tags}")
+
+    if fail_on_error and counters["failed"] > 0:
+        raise SystemExit(4)

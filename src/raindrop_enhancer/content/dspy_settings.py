@@ -11,7 +11,6 @@ class DSPyConfigError(Exception):
     pass
 
 
-@lru_cache(maxsize=1)
 def get_dspy_model() -> str:
     """Return the DSPy model identifier from environment.
 

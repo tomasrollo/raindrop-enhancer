@@ -11,20 +11,20 @@
 - [X] T003 Extend `tests/unit/test_sqlite_store.py` with a failing test that asserts `_ensure_tagging_columns` creates `auto_tags_json` and `auto_tags_meta_json` as `NULL` defaults.
 - [X] T004 [P] Create fail-first normalization tests in `tests/unit/test_tag_generator.py` covering Title Case conversion, ≤10 tag limit, and metadata assembly for generated tags.
 - [X] T005 [P] Add DSPy settings tests in `tests/unit/test_dspy_settings.py` verifying `RAINDROP_DSPY_MODEL` handling, missing credentials errors, and caching behavior.
-- [ ] T006 [P] Implement CLI contract test `tests/contract/test_cli_tags_generate.py` asserting option parsing, JSON summary structure, and exit codes with a stubbed predictor.
-- [ ] T007 [P] Add integration test `tests/integration/test_cli_tags_generate_integration.py` simulating dry-run, persistence, and idempotent rerun flows using an in-memory SQLite copy and fake DSPy predictor.
+ - [X] T006 [P] Implement CLI contract test `tests/contract/test_cli_tags_generate.py` asserting option parsing, JSON summary structure, and exit codes with a stubbed predictor.
+ - [X] T007 [P] Add integration test `tests/integration/test_cli_tags_generate_integration.py` simulating dry-run, persistence, and idempotent rerun flows using an in-memory SQLite copy and fake DSPy predictor.
 
  - [X] T008 Implement `_ensure_tagging_columns` and related migration logic in `src/raindrop_enhancer/storage/sqlite_store.py` to satisfy the new schema tests.
  - [X] T009 [P] Create `src/raindrop_enhancer/models/tagging.py` housing `TagGenerationMetadata` and `GeneratedTag` dataclasses, and update `src/raindrop_enhancer/models.py` to expose the new auto-tag fields with full type hints.
  - [X] T010 Implement `src/raindrop_enhancer/content/dspy_settings.py` to configure DSPy from environment variables with descriptive error messages and memoization.
-- [ ] T011 Implement `src/raindrop_enhancer/content/tag_generator.py` defining the DSPy `Signature`, predictor wrapper, normalization pipeline, and metadata packaging that returns `GeneratedTag` instances.
-- [ ] T012 Add store helpers in `src/raindrop_enhancer/storage/sqlite_store.py` for fetching untagged links and writing auto tags plus metadata in a single transaction.
-- [ ] T013 Create a tagging orchestrator (e.g., `TagGenerationRunner`) in `src/raindrop_enhancer/content/tag_generator.py` that batches links, invokes the predictor, and emits structured result events for the CLI.
+ - [X] T011 Implement `src/raindrop_enhancer/content/tag_generator.py` defining the DSPy `Signature`, predictor wrapper, normalization pipeline, and metadata packaging that returns `GeneratedTag` instances.
+ - [X] T012 Add store helpers in `src/raindrop_enhancer/storage/sqlite_store.py` for fetching untagged links and writing auto tags plus metadata in a single transaction.
+ - [X] T013 Create a tagging orchestrator (e.g., `TagGenerationRunner`) in `src/raindrop_enhancer/content/tag_generator.py` that batches links, invokes the predictor, and emits structured result events for the CLI.
 
 ## Phase 3.4: Integration
-- [ ] T014 Wire the `tags generate` Click command into `src/raindrop_enhancer/cli.py`, respecting existing option patterns and delegating to the new runner.
-- [ ] T015 Layer Rich progress reporting and summary formatting into the CLI command, including `--quiet`, `--json`, `--verbose`, and `--limit` behaviors.
-- [ ] T016 Implement CLI exit code mapping and error handling paths in `src/raindrop_enhancer/cli.py`, covering migration failures, DSPy misconfiguration, and unexpected exceptions.
+- [X] T014 Wire the `tags generate` Click command into `src/raindrop_enhancer/cli.py`, respecting existing option patterns and delegating to the new runner.
+- [X] T015 Layer Rich progress reporting and summary formatting into the CLI command, including `--quiet`, `--json`, `--verbose`, and `--limit` behaviors.
+- [X] T016 Implement CLI exit code mapping and error handling paths in `src/raindrop_enhancer/cli.py`, covering migration failures, DSPy misconfiguration, and unexpected exceptions.
 
 ## Phase 3.5: Polish & Validation
 - [ ] T017 Add performance smoke test `tests/perf/test_cli_tags_generate.py` ensuring a 50-link dry run completes within the documented latency and memory envelopes.
