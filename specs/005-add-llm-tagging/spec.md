@@ -53,7 +53,7 @@ As a knowledge worker who curates links in Raindrop Enhancer, I want to run a co
 - How should the system behave if `content_markdown` is empty, missing, or too short to produce meaningful tags?
 - What feedback should users receive when the LLM returns an error or times out during tagging?
 - How should duplicate tags or tags consisting solely of stopwords be handled to avoid clutter?
-- How should the system respond if the LLM returns more than 10 tags or tags that exceed 30 characters?
+- How should the system respond if the LLM returns more than 10 tags or tags that exceed 20 characters?
 - How should the system respond if the LLM suggests tags in a language other than English?
 
 ## Requirements *(mandatory)*
@@ -67,7 +67,7 @@ As a knowledge worker who curates links in Raindrop Enhancer, I want to run a co
 - **FR-006**: The system MUST log or report any tagging failures, including LLM errors, so users can retry or inspect affected links.
 - **FR-007**: The system MUST automatically scope each run to only links that currently lack tags, skipping links that already have tags recorded.
 - **FR-008**: The system MUST ensure that links lacking usable `content_markdown` are skipped gracefully without stopping the batch command.
-- **FR-009**: The system MUST constrain generated tags to a maximum of 10 per link, each formatted in Title Case and limited to 30 characters.
+- **FR-009**: The system MUST constrain generated tags to a maximum of 10 per link, each formatted in Title Case and limited to 20 characters.
 - **FR-010**: The system MUST normalize all generated tags to English, regardless of the original content language.
 - **FR-011**: The system MUST store auto-generated tags in a dedicated column on the links table, separate from manually curated tags.
 

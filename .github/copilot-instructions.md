@@ -10,6 +10,8 @@ Auto-generated from all feature plans. Last updated: 2025-10-03
 - Python 3.13 + Click, Rich, Gracy/httpx, Trafilatura, sqlite3, python-dotenv (003-add-trafilatura-add)
 - SQLite database at platform config directory (`raindrops.db`) (003-add-trafilatura-add)
 - Python 3.11 + `yt-dlp`, `gracy`, `trafilatura` (004-handle-youtube-videos)
+- Python 3.13 (uv-managed) + Click, Rich, Gracy/httpx, SQLite stdlib, Trafilatura, DSPy (new), python-dotenv, pytes (005-add-llm-tagging)
+- SQLite database at user config path (`raindrop_links` table) (005-add-llm-tagging)
 
 ## Project Structure
 ```
@@ -24,9 +26,9 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.13 (per `pyproject.toml` / uv defaults): Follow standard conventions
 
 ## Recent Changes
+- 005-add-llm-tagging: Added Python 3.13 (uv-managed) + Click, Rich, Gracy/httpx, SQLite stdlib, Trafilatura, DSPy (new), python-dotenv, pytes
 - 004-handle-youtube-videos: Added Python 3.13 + `yt-dlp`, `gracy`, `trafilatura`
 - 003-add-trafilatura-add: Added Python 3.13 + Click, Rich, Gracy/httpx, Trafilatura, sqlite3, python-dotenv
-- 002-storage-and-sync: Added Python 3.13 (uv-managed per `pyproject.toml`) + Gracy/httpx (Raindrop API), Click (CLI), Rich (console UX), sqlite3 stdlib (embedded DB), python-dotenv (env loading)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
