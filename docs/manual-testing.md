@@ -178,4 +178,20 @@ uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --require-ds
 Expected:
 - If `RAINDROP_DSPY_MODEL` is missing, exit code 2 and an error message. If present, emits JSON summary.
 
-```
+## Quickstart run: LLM-assisted tagging (T021)
+
+I performed the end-to-end quickstart locally using a temporary SQLite DB and a deterministic fake DSPy predictor to validate the dry-run -> persist -> idempotency flows.
+
+Summary (deterministic fake predictor):
+
+- Dry-run: exit code 0
+- Dry-run JSON summary: {"processed": 5, "generated": 5, "failed": 0, "db": "<tmp db>", "model": "unknown"}
+- Persist run: exit code 0
+- Persist JSON summary: {"processed": 5, "generated": 5, "failed": 0, "db": "<tmp db>", "model": "unknown"}
+- Re-run (idempotency): exit code 0; JSON: {"processed": 0, "generated": 0, "failed": 0, "db": "<tmp db>", "model": "unknown"}
+
+Notes:
+
+- The run used a fake predictor by monkeypatching `raindrop_enhancer.content.dspy_settings.configure_dspy` to return a simple fast callable. This avoids external API calls and makes the run deterministic for reviewers.
+- The `model` field shows `unknown` when using the fallback predictor; with a real DSPy-backed model (set `RAINDROP_DSPY_MODEL`) the CLI reports the configured model name.
+- Use the CLI commands in the spec/quickstart to reproduce against a real model and your DB; the quickstart in `specs/005-add-llm-tagging/quickstart.md` documents the exact commands.
