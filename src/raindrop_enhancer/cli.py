@@ -17,6 +17,17 @@ from .sync.orchestrator import Orchestrator
 from pathlib import Path
 
 
+# Load .env once at module import for interactive use. Skip while running under
+# pytest so tests can control the environment deterministically.
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
+
+if load_dotenv is not None and os.path.exists(".env") and "pytest" not in sys.modules:
+    load_dotenv()
+
+
 def _open_output(path: str) -> TextIO:
     if path == "-":
         return sys.stdout
@@ -52,20 +63,7 @@ def main(
 
     Reads `RAINDROP_TOKEN` from environment (or `.env` when using python-dotenv).
     """
-    # Attempt to load a local .env file if present. This is useful for
-    # interactive use. We avoid loading .env while running under pytest so
-    # tests can control the environment deterministically.
-    try:
-        from dotenv import load_dotenv
-    except Exception:
-        load_dotenv = None
-
-    if (
-        load_dotenv is not None
-        and os.path.exists(".env")
-        and "pytest" not in sys.modules
-    ):
-        load_dotenv()
+    # .env is loaded at module import (unless running under pytest)
 
     token = os.getenv("RAINDROP_TOKEN")
     if not token:
@@ -86,8 +84,8 @@ def main(
     elif verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        # Default: only show warnings/errors unless verbose requested
-        logging.basicConfig(level=logging.WARNING)
+        # Default: show informational messages (INFO) unless verbose or quiet requested
+        logging.basicConfig(level=logging.INFO)
 
     # Metrics / observability
     retries = []
@@ -235,20 +233,8 @@ def sync(
     rate_limit: int,
 ) -> None:
     """Synchronize Raindrop archive into a local SQLite database."""
-    # token and dotenv loading similar to main
-    try:
-        from dotenv import load_dotenv
-    except Exception:
-        load_dotenv = None
-
+    # .env is loaded at module import (unless running under pytest)
     import os, sys
-
-    if (
-        load_dotenv is not None
-        and os.path.exists(".env")
-        and "pytest" not in sys.modules
-    ):
-        load_dotenv()
 
     token = os.getenv("RAINDROP_TOKEN")
     if not token:
@@ -270,7 +256,7 @@ def sync(
     elif verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.INFO)
 
     def on_request(url: str) -> None:
         nonlocal requests_made
@@ -367,7 +353,7 @@ def capture_content(
     elif verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.INFO)
 
     dbp = Path(db_path) if db_path else default_db_path()
     store = SQLiteStore(dbp)
