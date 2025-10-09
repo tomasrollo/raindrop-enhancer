@@ -510,7 +510,7 @@ def tags_generate(
     """Generate auto-tags for untagged links and optionally persist them."""
     from .sync.orchestrator import default_db_path
     from .storage.sqlite_store import SQLiteStore
-    from .content.tag_generator import PredictorWrapper, TagGenerationRunner
+    from .content.tag_generator import TagGenerationRunner
     from .content.dspy_settings import configure_dspy, get_dspy_model, DSPyConfigError
 
     if quiet:
@@ -528,8 +528,8 @@ def tags_generate(
     try:
         predictor = configure_dspy()
         model_name = get_dspy_model()
-        # predictor is a callable prompt -> list[str]
-        pw = PredictorWrapper(predictor)
+        # predictor is a callable prompt -> (list[str], Optional[int])
+        pw = predictor
     except DSPyConfigError as e:
         model_name = "unknown"
         if require_dspy:
@@ -540,9 +540,10 @@ def tags_generate(
         def fake_predictor(prompt: str):
             # naive tag extraction: split by spaces, take first 2-word tokens
             parts = prompt.split()
-            return [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
+            tags = [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
+            return (tags, None)
 
-        pw = PredictorWrapper(fake_predictor)
+        pw = fake_predictor
 
     runner = TagGenerationRunner(pw, model_name=model_name, batch_size=5)
 

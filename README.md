@@ -170,3 +170,35 @@ Supported environment variables:
 - PERF_INCREMENTAL_MAX_SECONDS: allowed seconds for incremental insert (default: 0.5)
 
 These are small smoke-tests intended for quick local validation. For CI or larger benchmarks, increase counts and record results separately.
+
+### LLM / DSPy environment variables
+
+When using the auto-tagging feature the CLI configures DSPy (the DSPy library) and an underlying language model (LM). The following environment variables control that behavior; they are looked up by `src/raindrop_enhancer/content/dspy_settings.py`.
+
+- `RAINDROP_DSPY_MODEL` — Optional. DSPy model identifier in the form `<provider>/<model>` (example: `openai/gpt-4o-mini`). Default: `openai/gpt-4o-mini` when not set.
+- `RAINDROP_DSPY_TRACK_USAGE` — Optional. If set to `1` enables DSPy LM usage tracking so token counts may be recorded in generated metadata. Default: `0` (disabled).
+- `RAINDROP_DSPY_{PROVIDER}_API_KEY` — Optional. Provider-specific API key (e.g. `RAINDROP_DSPY_OPENAI_API_KEY`) — highest priority when present.
+- `{PROVIDER}_API_KEY` — Optional fallback for common provider env names (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
+- `RAINDROP_DSPY_API_KEY` — Optional fallback generic API key used if provider-specific keys are not present.
+- `RAINDROP_DSPY_API_BASE` — Optional. Custom API base URL for OpenAI-compatible or provider endpoints (e.g. for self-hosted or proxied endpoints). Falls back to `{PROVIDER}_API_BASE` if present.
+
+Examples:
+
+```bash
+# Preferred (provider-specific):
+export RAINDROP_DSPY_OPENAI_API_KEY="sk-..."
+
+# Or use the common name OpenAI expects:
+export OPENAI_API_KEY="sk-..."
+
+# Enable usage tracking to capture tokens used in metadata
+export RAINDROP_DSPY_TRACK_USAGE=1
+
+# Override model (optional; defaults to openai/gpt-4o-mini):
+export RAINDROP_DSPY_MODEL=openai/gpt-4o-mini
+```
+
+Notes:
+
+- When `--require-dspy` is passed to `tags generate`, the CLI will exit with code `2` if DSPy cannot be configured with the specified model and credentials. Without `--require-dspy` the CLI falls back to a deterministic fake predictor for dry-run and testing flows.
+- If you plan to run tagging in CI or production, prefer explicit `RAINDROP_DSPY_*` environment variables and `--require-dspy` to avoid accidental fallbacks.

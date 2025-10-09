@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Tuple
 
 import dspy
 
@@ -16,53 +16,102 @@ def get_dspy_model() -> str:
 
     Raises DSPyConfigError if not configured.
     """
+    # Default to a sensible OpenAI model when not configured explicitly.
+    # Users may override by setting RAINDROP_DSPY_MODEL in their env or .env.
     model = os.environ.get("RAINDROP_DSPY_MODEL")
     if not model:
-        raise DSPyConfigError(
-            "RAINDROP_DSPY_MODEL is not set; please set it to a DSPy model identifier, e.g. 'openai:gpt-4o-mini'"
-        )
+        return "openai/gpt-4o-mini"
     return model
 
 
 @lru_cache(maxsize=1)
-def configure_dspy() -> Callable[[str], List[str]]:
-    """Configure DSPy and return a simple predictor callable: prompt -> list[str].
+def configure_dspy() -> Callable[[str], Tuple[List[str], Optional[int]]]:
+    """Configure DSPy and return a predictor wrapper: prompt -> (list[str], tokens_used).
 
-    This wrapper normalizes several DSPy predictor interfaces and returns a
-    function that accepts a prompt string and yields a list of tag strings.
+    The wrapper attempts to instantiate a DSPy predictor using the documented
+    entrypoints (`dspy.Predict` preferred) and normalizes `dspy.Prediction`
+    objects to plain Python lists of strings. It also attempts to extract
+    LM usage (tokens) when `track_usage` is enabled.
     """
-    model = get_dspy_model()
+    track_usage = os.environ.get("RAINDROP_DSPY_TRACK_USAGE", "0") == "1"
     try:
-        # Attempt to configure global settings if available
-        try:
-            dspy.settings.configure(lm=model)
-        except Exception:
-            # Not all backends require this; ignore failures here
-            pass
+        # Basic configuration presence checks: if the user hasn't explicitly set a
+        # RAINDROP_DSPY_MODEL and no plausible API key env var is present, treat
+        # DSPy as "not configured" so callers can opt-in to failing fast.
+        model_env = os.environ.get("RAINDROP_DSPY_MODEL")
+        possible_keys = [
+            os.environ.get("RAINDROP_DSPY_API_KEY"),
+            os.environ.get("RAINDROP_DSPY_OPENAI_API_KEY"),
+            os.environ.get("RAINDROP_DSPY_ANTHROPIC_API_KEY"),
+            os.environ.get("RAINDROP_DSPY_GEMINI_API_KEY"),
+            os.environ.get("OPENAI_API_KEY"),
+            os.environ.get("ANTHROPIC_API_KEY"),
+            os.environ.get("GEMINI_API_KEY"),
+        ]
+        if model_env is None and not any(possible_keys):
+            # No explicit model and no API keys -> consider DSPy unconfigured
+            raise DSPyConfigError(
+                "DSPy not configured: set RAINDROP_DSPY_MODEL or provide a provider API key"
+            )
 
-        pred = dspy.Predictor(model)
+        # Configure LM with provider API key / api_base when present
+        model = get_dspy_model()
+        provider = model.split("/")[0].lower() if "/" in model else model.lower()
 
-        def predictor(prompt: str) -> List[str]:
-            # DSPy predictors vary: try call, then predict, then generate
-            if callable(pred):
-                res = pred(prompt)
-            elif hasattr(pred, "predict"):
-                res = pred.predict(prompt)
-            elif hasattr(pred, "generate"):
-                res = pred.generate(prompt)
-            else:
-                raise DSPyConfigError("Unsupported DSPy predictor interface")
+        # Resolve API key: prefer RAINDROP_DSPY_{PROVIDER}_API_KEY, then PROVIDER_API_KEY,
+        # then RAINDROP_DSPY_API_KEY, then common env names like OPENAI_API_KEY.
+        api_key = os.environ.get(f"RAINDROP_DSPY_{provider.upper()}_API_KEY")
+        if not api_key:
+            api_key = os.environ.get(f"{provider.upper()}_API_KEY")
+        if not api_key:
+            api_key = os.environ.get("RAINDROP_DSPY_API_KEY")
+        # provider-specific common fallbacks
+        if not api_key:
+            if provider == "openai":
+                api_key = os.environ.get("OPENAI_API_KEY")
+            elif provider == "anthropic":
+                api_key = os.environ.get("ANTHROPIC_API_KEY")
+            elif provider == "gemini":
+                api_key = os.environ.get("GEMINI_API_KEY")
 
-            # Normalize result to list[str]
-            if isinstance(res, str):
-                return [res]
-            if isinstance(res, list):
-                return [str(r) for r in res]
-            # Attempt to coerce from other structures
-            try:
-                return [str(r) for r in list(res)]
-            except Exception:
-                return []
+        # Optional custom API base (for OpenAI-compatible provider endpoints)
+        api_base = os.environ.get("RAINDROP_DSPY_API_BASE") or os.environ.get(
+            f"{provider.upper()}_API_BASE"
+        )
+
+        lm_kwargs = {}
+        if api_key:
+            lm_kwargs["api_key"] = api_key
+        if api_base:
+            lm_kwargs["api_base"] = api_base
+        lm = dspy.LM(model, **lm_kwargs)
+        dspy.settings.configure(lm=lm, track_usage=track_usage)
+
+        # Build a small Signature class
+        class _TagSignature(dspy.Signature):
+            """Generate tags for input text."""
+
+            text: str = dspy.InputField(description="Input text for tag generation.")
+            tags: List[str] = dspy.OutputField(
+                description="List of tags most relevant to the input text."
+            )
+
+        pred = dspy.Predict(_TagSignature)
+
+        def predictor(text: str) -> Tuple[List[str], Optional[int]]:
+            prediction = pred(text=text)
+            tokens_used: Optional[int] = None
+            if track_usage:
+                try:
+                    usage = prediction.get_lm_usage()
+                    if hasattr(usage, "total_tokens"):
+                        tokens_used = int(getattr(usage, "total_tokens"))
+                    elif hasattr(usage, "tokens"):
+                        tokens_used = int(getattr(usage, "tokens"))
+                except Exception:
+                    tokens_used = None
+
+            return prediction.tags, tokens_used
 
         return predictor
     except Exception as e:
