@@ -27,7 +27,7 @@
 - [X] T016 Implement CLI exit code mapping and error handling paths in `src/raindrop_enhancer/cli.py`, covering migration failures, DSPy misconfiguration, and unexpected exceptions.
 
 ## Phase 3.5: Polish & Validation
-- [ ] T017 Add performance smoke test `tests/perf/test_cli_tags_generate.py` ensuring a 50-link dry run completes within the documented latency and memory envelopes.
+- [X] T017 Add performance smoke test `tests/perf/test_cli_tags_generate.py` ensuring a 50-link dry run completes within the documented latency and memory envelopes.
 - [X] T018 Update `README.md` with usage docs, environment variable guidance, and sample output for `uv run raindrop-enhancer tags generate`.
 - [X] T019 Update `docs/manual-testing.md` with manual validation steps aligned to the quickstart scenarios.
 - [X] T020 Run `uv run pytest` and capture results in the feature branch notes.
