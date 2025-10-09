@@ -1,12 +1,12 @@
-Raindrop Enhancer
+# Raindrop Enhancer
 
 See the project Constitution at `.specify/memory/constitution.md` for core principles, quality gates, and governance. All plans and tasks must comply with these standards.
 
-Tooling
+## Tooling
 
 This project uses `uv` for Python package, dependency, and build management. Use `uv run` for commands and keep lockfiles current via `uv lock`/`uv sync`.
 
-Quickstart (summary)
+## Quickstart (summary)
 
 CLI: `raindrop-export`
 
@@ -24,7 +24,7 @@ Run example:
 uv run raindrop-export --verbose --output my_raindrops.json
 ```
 
-Database-backed sync (new)
+## Database-backed sync
 
 The project includes a `raindrop-sync` command which persists raindrops into a local
 SQLite database and supports incremental runs via a recorded cursor.
@@ -47,7 +47,7 @@ Use `--db-path` to override the DB file location for testing:
 uv run raindrop-sync --db-path ./tmp/test.db --json
 ```
 
-Capture content (new)
+## Capture content
 
 The project also includes a `capture-content` command to capture full-text Markdown for saved links and persist it into the SQLite database.
 
@@ -59,7 +59,7 @@ uv run capture-content --limit 100
 uv run capture-content --refresh --limit 50
 ```
 
-YouTube links
+## YouTube links
 
 The capture pipeline now includes special handling for YouTube video links. When a saved link is identified as a YouTube video the system will use `yt-dlp` to fetch the video's title and description (without downloading the full video) and save it into the `content_markdown` column as Markdown:
 
@@ -89,7 +89,7 @@ uv run capture-content --db-path ./tmp/test.db --dry-run --limit 10
 uv run capture-content --db-path ./tmp/raindrops.db --limit 200
 ```
 
-Migration note
+### Migration note
 
 You can add the `content_markdown` and `content_fetched_at` columns to your existing DB either via a one-off Python helper or via the new `migrate` CLI command that performs a safe backup and applies the schema change.
 
@@ -115,13 +115,13 @@ print('Migration applied')
 PY
 ```
 
-Troubleshooting
+## Troubleshooting
 
 - Missing token: create a `.env` file at the repository root with `RAINDROP_TOKEN=your_token_here`.
 - Rate limit errors (HTTP 429): the CLI retries with exponential backoff; repeated failures indicate an exhausted rate budget—try again later or reduce parallelism.
 - Empty output: run with `--dry-run --verbose` to inspect available collections and counts.
 
-Performance tests
+## Performance tests
 
 Small performance smoke tests live under `tests/perf/`. They are skipped by default and must be enabled via environment variables. Example invocations:
 
@@ -133,7 +133,7 @@ ENABLE_PERF=1 PERF_COUNT=50 PERF_MAX_SECONDS=5 uv run pytest tests/perf/test_syn
 ENABLE_PERF=1 PERF_BASELINE_COUNT=50 PERF_INCREMENTAL_COUNT=10 PERF_INCREMENTAL_MAX_SECONDS=2 uv run pytest tests/perf/test_sync_incremental.py
 ```
 
-Auto-tagging (LLM-assisted)
+## Auto-tagging (LLM-assisted)
 
 You can generate auto-tags for links stored in the local SQLite DB using the DSPy-powered tag generator.
 
