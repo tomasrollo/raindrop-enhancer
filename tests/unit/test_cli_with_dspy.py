@@ -34,9 +34,8 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     # Run CLI with dry-run to avoid writing DB
     from raindrop_enhancer import cli as cli_mod
 
-    entry = getattr(cli_mod, "cli", None)
-    if entry is None:
-        entry = getattr(cli_mod, "tag", None)
+    # Use strict top-level `cli` group
+    entry = cli_mod.cli
 
     runner = CliRunner()
     db_file = tmp_path / "links.db"

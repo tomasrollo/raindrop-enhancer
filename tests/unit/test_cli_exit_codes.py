@@ -61,10 +61,9 @@ def test_persistence_failure_returns_3(monkeypatch, tmp_path):
     db_file = tmp_path / "links.db"
     # CLI now exposes `tag` as a single command (no 'generate' subcommand)
     # Use the top-level module entrypoint to exercise the command as users would.
-    entry = getattr(cli_mod, "cli", None)
-    if entry is None:
-        # Fallback to old attribute for backwards compatibility in tests
-        entry = getattr(cli_mod, "tag", None)
+    # Tests now assume the unified CLI entrypoint `cli` exists and exposes
+    # the `tag` subcommand. Call the top-level `cli` group directly.
+    entry = cli_mod.cli
     result = runner.invoke(entry, ["tag", "--db-path", str(db_file)])
 
     assert result.exit_code == 3
@@ -114,9 +113,7 @@ def test_fail_on_error_returns_4(monkeypatch, tmp_path):
     db_file = tmp_path / "links.db"
 
     # Use --dry-run to avoid persistence and --json to exercise JSON path
-    entry = getattr(cli_mod, "cli", None)
-    if entry is None:
-        entry = getattr(cli_mod, "tag", None)
+    entry = cli_mod.cli
     result = runner.invoke(entry, ["tag", "--db-path", str(db_file), "--fail-on-error", "--dry-run", "--json"])
 
     assert result.exit_code == 4

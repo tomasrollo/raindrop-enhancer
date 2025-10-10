@@ -18,9 +18,8 @@ def test_require_dspy_exits_when_missing(monkeypatch, tmp_path):
     # Import here so environment changes take effect before CLI loads modules
     import raindrop_enhancer.cli as cli_mod
 
-    entry = getattr(cli_mod, "cli", None)
-    if entry is None:
-        entry = getattr(cli_mod, "tag", None)
+    # Tests require the unified CLI top-level group to exist.
+    entry = cli_mod.cli
 
     runner = CliRunner()
 
