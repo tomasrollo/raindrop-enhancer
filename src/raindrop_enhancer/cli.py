@@ -17,10 +17,36 @@ from .sync.orchestrator import Orchestrator
 from pathlib import Path
 
 
+# Load .env once at module import for interactive use. Skip while running under
+# pytest so tests can control the environment deterministically.
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
+
+if load_dotenv is not None and os.path.exists(".env") and "pytest" not in sys.modules:
+    load_dotenv()
+
+
 def _open_output(path: str) -> TextIO:
     if path == "-":
         return sys.stdout
     return open(path, "w", encoding="utf-8")
+
+
+def _configure_logging(quiet: bool, verbose: bool) -> None:
+    """Configure root logging level based on CLI flags.
+
+    - quiet -> WARNING
+    - verbose -> DEBUG
+    - default -> INFO
+    """
+    if quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
 
 @click.command()
@@ -52,20 +78,7 @@ def main(
 
     Reads `RAINDROP_TOKEN` from environment (or `.env` when using python-dotenv).
     """
-    # Attempt to load a local .env file if present. This is useful for
-    # interactive use. We avoid loading .env while running under pytest so
-    # tests can control the environment deterministically.
-    try:
-        from dotenv import load_dotenv
-    except Exception:
-        load_dotenv = None
-
-    if (
-        load_dotenv is not None
-        and os.path.exists(".env")
-        and "pytest" not in sys.modules
-    ):
-        load_dotenv()
+    # .env is loaded at module import (unless running under pytest)
 
     token = os.getenv("RAINDROP_TOKEN")
     if not token:
@@ -79,15 +92,7 @@ def main(
     )
 
     # Configure logging based on flags
-    # - --verbose turns on debug logging from the client
-    # - --quiet suppresses non-error output (keeps warnings/errors only)
-    if quiet:
-        logging.basicConfig(level=logging.WARNING)
-    elif verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        # Default: only show warnings/errors unless verbose requested
-        logging.basicConfig(level=logging.WARNING)
+    _configure_logging(quiet=quiet, verbose=verbose)
 
     # Metrics / observability
     retries = []
@@ -235,20 +240,8 @@ def sync(
     rate_limit: int,
 ) -> None:
     """Synchronize Raindrop archive into a local SQLite database."""
-    # token and dotenv loading similar to main
-    try:
-        from dotenv import load_dotenv
-    except Exception:
-        load_dotenv = None
-
+    # .env is loaded at module import (unless running under pytest)
     import os, sys
-
-    if (
-        load_dotenv is not None
-        and os.path.exists(".env")
-        and "pytest" not in sys.modules
-    ):
-        load_dotenv()
 
     token = os.getenv("RAINDROP_TOKEN")
     if not token:
@@ -265,12 +258,7 @@ def sync(
     retries = []
 
     # Configure logging based on flags (mirror `main` behavior)
-    if quiet:
-        logging.basicConfig(level=logging.WARNING)
-    elif verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.WARNING)
+    _configure_logging(quiet=quiet, verbose=verbose)
 
     def on_request(url: str) -> None:
         nonlocal requests_made
@@ -367,7 +355,7 @@ def capture_content(
     elif verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.INFO)
 
     dbp = Path(db_path) if db_path else default_db_path()
     store = SQLiteStore(dbp)
@@ -421,10 +409,7 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
     Currently supported target: `content-markdown` which adds columns required for
     the capture-content feature. This command makes a backup before applying changes.
     """
-    if quiet:
-        logging.basicConfig(level=logging.WARNING)
-    else:
-        logging.basicConfig(level=logging.INFO)
+    _configure_logging(quiet=quiet, verbose=False)
 
     from .sync.orchestrator import default_db_path
     from .storage.sqlite_store import SQLiteStore
@@ -473,3 +458,161 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
     except Exception as exc:
         click.echo(f"Migration failed: {repr(exc)}", err=True)
         raise SystemExit(1)
+
+
+@click.group()
+def tags():
+    """Tag-related commands (auto-tagging using DSPy)."""
+
+
+@tags.command(name="generate")
+@click.option("--db-path", default=None, help="Path to SQLite DB file")
+@click.option("--limit", default=None, type=int, help="Maximum links to process")
+@click.option(
+    "--dry-run", is_flag=True, help="Do not persist tags; just show what would be done"
+)
+@click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
+@click.option("--quiet", is_flag=True, help="Suppress non-error output")
+@click.option("--verbose", is_flag=True, help="Verbose output")
+@click.option(
+    "--fail-on-error",
+    is_flag=True,
+    help="Exit non-zero if any individual link generation failed",
+)
+def tags_generate(
+    db_path: str,
+    limit: int,
+    dry_run: bool,
+    as_json: bool,
+    quiet: bool,
+    verbose: bool,
+    fail_on_error: bool,
+):
+    """Generate auto-tags for untagged links and optionally persist them."""
+    from .sync.orchestrator import default_db_path
+    from .storage.sqlite_store import SQLiteStore
+    from .content.tag_generator import TagGenerationRunner
+    from .content.dspy_settings import configure_dspy, get_dspy_model, DSPyConfigError
+
+    _configure_logging(quiet=quiet, verbose=verbose)
+
+    # Log invocation parameters for debugging/observability
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "tags_generate invoked with db_path=%r limit=%r dry_run=%r as_json=%r quiet=%r verbose=%r fail_on_error=%r",
+        db_path,
+        limit,
+        dry_run,
+        as_json,
+        quiet,
+        verbose,
+        fail_on_error,
+    )
+
+    dbp = Path(db_path) if db_path else default_db_path()
+    store = SQLiteStore(dbp)
+    store.connect()
+
+    # prepare predictor: try to configure DSPy, otherwise use a deterministic fake
+    try:
+        predictor = configure_dspy()
+        model_name = get_dspy_model()
+        # predictor is a callable prompt -> (list[str], Optional[int])
+        pw = predictor
+    except DSPyConfigError as e:
+        click.echo(f"DSPy configuration required but missing: {e}", err=True)
+        raise SystemExit(2)
+
+    runner = TagGenerationRunner(predictor, model_name=model_name, batch_size=5)
+
+    items = store.fetch_untagged_links(limit=limit)
+    logger.debug("Fetched %s untagged links from DB", len(items))
+
+    # Prepare progress reporting and result collection
+    total = len(items)
+    collected: list[dict] = []
+    counters = {"processed": 0, "generated": 0, "failed": 0}
+
+    def _on_result(entry: dict) -> None:
+        # entry: {"raindrop_id", "tags_json", "meta_json"}
+        collected.append(entry)
+        counters["processed"] += 1
+        if entry.get("tags_json") and entry.get("tags_json") != "[]":
+            counters["generated"] += 1
+        else:
+            counters["failed"] += 1
+
+    # Run with Rich progress when available and not quiet
+    try:
+        from rich.progress import (
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            BarColumn,
+            TimeElapsedColumn,
+        )
+
+        use_rich = True
+    except Exception:
+        use_rich = False
+
+    if use_rich and not quiet and not as_json:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            TimeElapsedColumn(),
+        ) as progress:
+            task = progress.add_task(
+                f"Tagging links (model={model_name})", total=total or None
+            )
+
+            def on_result_with_advance(e: dict) -> None:
+                _on_result(e)
+                progress.update(task, advance=1)
+
+            runner.run_batch(items, on_result=on_result_with_advance)
+    else:
+        # No rich available or quiet requested: run without progress
+        runner.run_batch(items, on_result=_on_result)
+
+    # Persist if not dry-run
+    if not dry_run and collected:
+        tuples = [(c["raindrop_id"], c["tags_json"], c["meta_json"]) for c in collected]
+        try:
+            store.write_auto_tags_batch(tuples)
+        except Exception as exc:
+            click.echo(f"Failed to persist auto-tags: {exc}", err=True)
+            raise SystemExit(3)
+
+    summary = {
+        "processed": counters["processed"],
+        "generated": counters["generated"],
+        "failed": counters["failed"],
+        "db": str(dbp),
+        "model": model_name,
+    }
+
+    if as_json:
+        import json
+
+        print(json.dumps(summary))
+        if fail_on_error and counters["failed"] > 0:
+            raise SystemExit(4)
+        return
+
+    # Human-readable summary
+    if not quiet:
+        click.echo(
+            f"Processed: {summary['processed']} links (generated={summary['generated']}, failed={summary['failed']})"
+        )
+        click.echo(f"Model: {summary['model']} DB: {summary['db']}")
+        # show up to 10 sample items
+        if collected:
+            click.echo("Sample results:")
+            for c in collected[:10]:
+                tags = c.get("tags_json") or "[]"
+                click.echo(f" - [{c['raindrop_id']}] tags={tags}")
+
+    if fail_on_error and counters["failed"] > 0:
+        raise SystemExit(4)

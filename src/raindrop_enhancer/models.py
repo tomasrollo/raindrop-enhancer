@@ -9,6 +9,7 @@ from typing import List, Optional, Iterable
 from urllib.parse import urlparse
 from pathlib import Path
 import json
+from .tagging import GeneratedTag, TagGenerationMetadata
 
 
 @dataclass
@@ -91,6 +92,9 @@ class RaindropLink:
     content_markdown: Optional[str] = None
     content_fetched_at: Optional[str] = None
     content_source: Optional[str] = None
+    # Auto-generated tagging fields
+    auto_tags_json: Optional[str] = None
+    auto_tags_meta_json: Optional[str] = None
 
     @staticmethod
     def from_raindrop(r: "Raindrop", synced_at: datetime) -> "RaindropLink":

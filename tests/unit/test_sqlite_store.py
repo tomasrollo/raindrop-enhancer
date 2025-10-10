@@ -98,3 +98,28 @@ def test_url_validation_in_models():
     assert is_valid_url("http://example.com/path") is True
     assert is_valid_url("ftp://example.com") is False
     assert is_valid_url("not-a-url") is False
+
+
+def test_ensure_tagging_columns_creates_columns(tmp_path: Path):
+    """Fail-first test: _ensure_tagging_columns should add auto_tags_json and auto_tags_meta_json
+    columns with NULL defaults when the DB is initialized or migrated.
+    """
+    db = tmp_path / "test.db"
+    store = SQLiteStore(db)
+    # connect creates base schema but does not auto-apply migrations; run migration helper explicitly
+    store.connect()
+    store._ensure_tagging_columns()
+    cur = store.conn.cursor()
+    cur.execute("PRAGMA table_info(raindrop_links)")
+    cols = {row[1]: row for row in cur.fetchall()}  # name -> row
+
+    # Expect the new columns to be present and allow NULL
+    assert "auto_tags_json" in cols, "auto_tags_json column is missing"
+    assert "auto_tags_meta_json" in cols, "auto_tags_meta_json column is missing"
+
+    # Verify default is NULL (not NOT NULL)
+    # PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
+    assert cols["auto_tags_json"][3] == 0, "auto_tags_json should allow NULL"
+    assert cols["auto_tags_meta_json"][3] == 0, "auto_tags_meta_json should allow NULL"
+
+    cur.close()

@@ -1,12 +1,12 @@
-Raindrop Enhancer
+# Raindrop Enhancer
 
 See the project Constitution at `.specify/memory/constitution.md` for core principles, quality gates, and governance. All plans and tasks must comply with these standards.
 
-Tooling
+## Tooling
 
 This project uses `uv` for Python package, dependency, and build management. Use `uv run` for commands and keep lockfiles current via `uv lock`/`uv sync`.
 
-Quickstart (summary)
+## Quickstart (summary)
 
 CLI: `raindrop-export`
 
@@ -24,7 +24,7 @@ Run example:
 uv run raindrop-export --verbose --output my_raindrops.json
 ```
 
-Database-backed sync (new)
+## Database-backed sync
 
 The project includes a `raindrop-sync` command which persists raindrops into a local
 SQLite database and supports incremental runs via a recorded cursor.
@@ -47,7 +47,7 @@ Use `--db-path` to override the DB file location for testing:
 uv run raindrop-sync --db-path ./tmp/test.db --json
 ```
 
-Capture content (new)
+## Capture content
 
 The project also includes a `capture-content` command to capture full-text Markdown for saved links and persist it into the SQLite database.
 
@@ -59,7 +59,7 @@ uv run capture-content --limit 100
 uv run capture-content --refresh --limit 50
 ```
 
-YouTube links
+## YouTube links
 
 The capture pipeline now includes special handling for YouTube video links. When a saved link is identified as a YouTube video the system will use `yt-dlp` to fetch the video's title and description (without downloading the full video) and save it into the `content_markdown` column as Markdown:
 
@@ -89,7 +89,7 @@ uv run capture-content --db-path ./tmp/test.db --dry-run --limit 10
 uv run capture-content --db-path ./tmp/raindrops.db --limit 200
 ```
 
-Migration note
+### Migration note
 
 You can add the `content_markdown` and `content_fetched_at` columns to your existing DB either via a one-off Python helper or via the new `migrate` CLI command that performs a safe backup and applies the schema change.
 
@@ -115,13 +115,13 @@ print('Migration applied')
 PY
 ```
 
-Troubleshooting
+## Troubleshooting
 
 - Missing token: create a `.env` file at the repository root with `RAINDROP_TOKEN=your_token_here`.
 - Rate limit errors (HTTP 429): the CLI retries with exponential backoff; repeated failures indicate an exhausted rate budget—try again later or reduce parallelism.
 - Empty output: run with `--dry-run --verbose` to inspect available collections and counts.
 
-Performance tests
+## Performance tests
 
 Small performance smoke tests live under `tests/perf/`. They are skipped by default and must be enabled via environment variables. Example invocations:
 
@@ -133,6 +133,33 @@ ENABLE_PERF=1 PERF_COUNT=50 PERF_MAX_SECONDS=5 uv run pytest tests/perf/test_syn
 ENABLE_PERF=1 PERF_BASELINE_COUNT=50 PERF_INCREMENTAL_COUNT=10 PERF_INCREMENTAL_MAX_SECONDS=2 uv run pytest tests/perf/test_sync_incremental.py
 ```
 
+## Auto-tagging (LLM-assisted)
+
+You can generate auto-tags for links stored in the local SQLite DB using the DSPy-powered tag generator.
+
+Basic dry-run (no DB writes):
+
+```bash
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+```
+
+Persist generated tags (writes to DB):
+
+```bash
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db
+```
+
+Important flags:
+- `--fail-on-error`: return non-zero exit code (4) if any individual link generation failed
+- `--json`: print a JSON summary (suitable for CI parsing)
+
+Exit codes:
+- `0` — success
+- `2` — DSPy required but not configured
+- `3` — persistence/write failure when saving generated tags
+- `4` — per-link generation failures when `--fail-on-error` is used
+
+
 Supported environment variables:
 - ENABLE_PERF: set to `1` to run perf tests (default: tests are skipped)
 - PERF_COUNT: number of synthetic items for baseline test (default: 1000)
@@ -142,3 +169,36 @@ Supported environment variables:
 - PERF_INCREMENTAL_MAX_SECONDS: allowed seconds for incremental insert (default: 0.5)
 
 These are small smoke-tests intended for quick local validation. For CI or larger benchmarks, increase counts and record results separately.
+
+### LLM / DSPy environment variables
+
+When using the auto-tagging feature the CLI configures DSPy (the DSPy library) and an underlying language model (LM). The following environment variables control that behavior; they are looked up by `src/raindrop_enhancer/content/dspy_settings.py`.
+
+- `RAINDROP_DSPY_MODEL` — Optional. DSPy model identifier in the form `<provider>/<model>` (example: `openai/gpt-4o-mini`). Default: `openai/gpt-4o-mini` when not set.
+- `RAINDROP_DSPY_TRACK_USAGE` — Optional. If set to `1` enables DSPy LM usage tracking so token counts may be recorded in generated metadata. Default: `0` (disabled).
+- `RAINDROP_DSPY_{PROVIDER}_API_KEY` — Optional. Provider-specific API key (e.g. `RAINDROP_DSPY_OPENAI_API_KEY`) — highest priority when present.
+- `{PROVIDER}_API_KEY` — Optional fallback for common provider env names (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
+- `RAINDROP_DSPY_API_KEY` — Optional fallback generic API key used if provider-specific keys are not present.
+- `RAINDROP_DSPY_API_BASE` — Optional. Custom API base URL for OpenAI-compatible or provider endpoints (e.g. for self-hosted or proxied endpoints). Falls back to `{PROVIDER}_API_BASE` if present.
+
+Examples:
+
+```bash
+# Preferred (provider-specific):
+export RAINDROP_DSPY_OPENAI_API_KEY="sk-..."
+
+# Or use the common name OpenAI expects:
+export OPENAI_API_KEY="sk-..."
+
+# Enable usage tracking to capture tokens used in metadata
+export RAINDROP_DSPY_TRACK_USAGE=1
+
+# Override model (optional; defaults to openai/gpt-4o-mini):
+export RAINDROP_DSPY_MODEL=openai/gpt-4o-mini
+```
+
+Notes:
+
+- The `tags generate` command requires DSPy to be configured. If DSPy cannot be configured with the specified model and credentials, the command will exit with code `2`.
+
+- For CI or production runs, set the `RAINDROP_DSPY_*` environment variables to ensure the predictor is available.
