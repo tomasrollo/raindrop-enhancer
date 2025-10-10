@@ -56,7 +56,9 @@ def configure_dspy() -> dspy.Predict:
         # are only used as fallbacks later when resolving provider credentials.
         if model_env is None and not any(raindrop_scoped_keys):
             # No explicit model and no RAINDROP-prefixed API keys -> consider DSPy unconfigured
-            raise DSPyConfigError("DSPy not configured: set RAINDROP_DSPY_MODEL or provide a RAINDROP_DSPY_* API key")
+            raise DSPyConfigError(
+                "DSPy not configured: set RAINDROP_DSPY_MODEL or provide a RAINDROP_DSPY_* API key"
+            )
 
         # Configure LM with provider API key / api_base when present
         model = get_dspy_model()
@@ -79,9 +81,11 @@ def configure_dspy() -> dspy.Predict:
                 api_key = os.environ.get("GEMINI_API_KEY")
 
         # Optional custom API base (for OpenAI-compatible provider endpoints)
-        api_base = os.environ.get("RAINDROP_DSPY_API_BASE") or os.environ.get(f"{provider.upper()}_API_BASE")
+        api_base = os.environ.get("RAINDROP_DSPY_API_BASE") or os.environ.get(
+            f"{provider.upper()}_API_BASE"
+        )
 
-        lm_kwargs = {}
+        lm_kwargs = {"temperature": 1.0, "max_tokens": 10000}
         if api_key:
             lm_kwargs["api_key"] = api_key
         if api_base:
@@ -94,7 +98,9 @@ def configure_dspy() -> dspy.Predict:
             """Generate tags for input text."""
 
             text: str = dspy.InputField(description="Input text for tag generation.")
-            tags: List[str] = dspy.OutputField(description="List of tags most relevant to the input text.")
+            tags: List[str] = dspy.OutputField(
+                description="List of tags most relevant to the input text."
+            )
 
         return dspy.Predict(_TagSignature)
     except Exception as e:

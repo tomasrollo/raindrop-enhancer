@@ -374,9 +374,12 @@ class SQLiteStore:
             else:
                 select_fields.append("NULL as content_markdown")
 
-            # If auto_tags_json doesn't exist, treat all rows as untagged
+            # If auto_tags_json doesn't exist, treat all rows as untagged.
+            # If the column exists, consider rows untagged when the column is NULL,
+            # empty, or contains an empty list literal '[]'. This handles cases
+            # where tags were written as an empty JSON array or an empty string.
             if "auto_tags_json" in cols:
-                where = "auto_tags_json IS NULL"
+                where = "(auto_tags_json IS NULL OR trim(auto_tags_json) = '' OR trim(auto_tags_json) = '[]')"
             else:
                 where = "1=1"
 
@@ -387,7 +390,14 @@ class SQLiteStore:
             else:
                 cur.execute(q)
 
-            return [(int(r[0]), r[1], r[2], r[3]) for r in cur.fetchall()]
+            rows = cur.fetchall()
+            Logger.debug(
+                "fetch_untagged_links: query=%s limit=%r returned=%d rows",
+                q,
+                limit,
+                len(rows),
+            )
+            return [(int(r[0]), r[1], r[2], r[3]) for r in rows]
         finally:
             cur.close()
 

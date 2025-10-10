@@ -86,7 +86,9 @@ class TagGenerationRunner:
             getattr(predictor, "__class__", predictor),
         )
 
-    def run_batch(self, items: Iterable[tuple], on_result: Optional[Callable[[dict], None]] = None) -> List[tuple]:
+    def run_batch(
+        self, items: Iterable[tuple], on_result: Optional[Callable[[dict], None]] = None
+    ) -> List[tuple]:
         """Process items and return list of (raindrop_id, tags_json_str, meta_json_str).
 
         items: Iterable of (raindrop_id, title, url, content_markdown)
@@ -102,9 +104,11 @@ class TagGenerationRunner:
             for rid, title, url, content in b:
                 try:
                     prompt = f"Generate up to 10 concise tags for the following content:\nTitle: {title}\nContent: {content or ''}"
-                    self.logger.debug("Calling predictor for rid=%s title=%r url=%r", rid, title, url)
+                    self.logger.debug(
+                        "Calling predictor for rid=%s title=%r url=%r", rid, title, url
+                    )
                     # Call predictor (expects a Prediction-like object)
-                    out = self.predictor(prompt)
+                    out = self.predictor(text=prompt)
                     self.logger.debug("Predictor returned type=%s", type(out))
                     raw_tags = getattr(out, "tags", [])
                     self.logger.debug("Raw tags from predictor: %r", raw_tags)
@@ -131,9 +135,16 @@ class TagGenerationRunner:
                     )
                     meta_json = json.dumps(asdict(meta))
                     res = (rid, tags_json, meta_json)
-                    self.logger.debug("Generated result for rid=%s: tags=%s status=%s", rid, tags_json, meta.status)
+                    self.logger.debug(
+                        "Generated result for rid=%s: tags=%s status=%s",
+                        rid,
+                        tags_json,
+                        meta.status,
+                    )
                 except Exception as e:
-                    self.logger.exception("Exception while generating tags for rid=%s", rid)
+                    self.logger.exception(
+                        "Exception while generating tags for rid=%s", rid
+                    )
                     meta = TagGenerationMetadata(
                         generated_at=datetime.now(timezone.utc).isoformat(),
                         model=self.model_name,
@@ -154,9 +165,15 @@ class TagGenerationRunner:
                             }
                         )
                     except Exception as cb_e:
-                        self.logger.exception("on_result callback raised exception for rid=%s: %s", rid, cb_e)
+                        self.logger.exception(
+                            "on_result callback raised exception for rid=%s: %s",
+                            rid,
+                            cb_e,
+                        )
 
-        self.logger.debug(f"processing %s items with batch_size=%s", len(items), self.batch_size)
+        self.logger.debug(
+            f"processing %s items with batch_size=%s", len(items), self.batch_size
+        )
         for item in items:
             batch.append(item)
             if len(batch) >= self.batch_size:

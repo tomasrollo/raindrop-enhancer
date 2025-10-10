@@ -120,7 +120,9 @@ def test_configure_dspy_without_track_usage_returns_none(monkeypatch):
     monkeypatch.setattr(ds.dspy, "Predict", FakePredictNoUsage)
     # Ensure LM constructor exists but do not inspect kwargs here
     monkeypatch.setattr(ds.dspy, "LM", lambda m, **k: object())
-    monkeypatch.setattr(ds.dspy, "settings", type("S", (), {"configure": lambda self, **k: None})())
+    monkeypatch.setattr(
+        ds.dspy, "settings", type("S", (), {"configure": lambda self, **k: None})()
+    )
 
     ds.configure_dspy.cache_clear()
     pred = ds.configure_dspy()
