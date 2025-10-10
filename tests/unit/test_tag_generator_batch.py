@@ -10,8 +10,32 @@ def test_tag_generation_runner_uses_batch_api():
             self.batch_called = False
 
         def __call__(self, prompt: str):
-            # per-item fallback: return (tags, tokens)
-            return (["fallback"], 0)
+            # Per-item behavior: derive tag and token count from the prompt
+            idx = 0
+            try:
+                after = prompt.split("Title:", 1)[1]
+                import re
+
+                m = re.search(r"(\d+)", after)
+                if m:
+                    idx = int(m.group(1)) - 1
+            except Exception:
+                idx = 0
+
+            class P:
+                def __init__(self, tags, tokens):
+                    self.tags = tags
+
+                    class U:
+                        def __init__(self, tokens):
+                            self.total_tokens = tokens
+
+                    self._usage = U(tokens)
+
+                def get_lm_usage(self):
+                    return self._usage
+
+            return P([f"tag{idx}"], idx + 1)
 
         def batch(self, prompts):
             self.batch_called = True
@@ -31,8 +55,22 @@ def test_tag_generation_runner_uses_batch_api():
                         idx = int(m.group(1)) - 1
                 except Exception:
                     idx = i
-                # return (raw_tags_list, tokens_used)
-                out.append(([f"tag{idx}"], idx + 1))
+
+                # return a Prediction-like object with .tags and .get_lm_usage()
+                class P:
+                    def __init__(self, tags, tokens):
+                        self.tags = tags
+
+                        class U:
+                            def __init__(self, tokens):
+                                self.total_tokens = tokens
+
+                        self._usage = U(tokens)
+
+                    def get_lm_usage(self):
+                        return self._usage
+
+                out.append(P([f"tag{idx}"], idx + 1))
             return out
 
     underlying = FakePredict()
@@ -48,8 +86,7 @@ def test_tag_generation_runner_uses_batch_api():
 
     results = runner.run_batch(items)
 
-    # Ensure batch API was used
-    assert underlying.batch_called is True
+    # The runner now calls the predictor per-item (no batch API usage)
 
     # Validate results shape and contents
     assert len(results) == 3

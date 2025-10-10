@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Optional, Callable, List, Tuple
+from typing import Optional, List, Any
 
 import dspy
 
@@ -25,13 +25,14 @@ def get_dspy_model() -> str:
 
 
 @lru_cache(maxsize=1)
-def configure_dspy() -> Callable[[str], Tuple[List[str], Optional[int]]]:
-    """Configure DSPy and return a predictor wrapper: prompt -> (list[str], tokens_used).
+def configure_dspy() -> dspy.Predict:
+    """Configure DSPy and return a `dspy.Predict` object.
 
-    The wrapper attempts to instantiate a DSPy predictor using the documented
-    entrypoints (`dspy.Predict` preferred) and normalizes `dspy.Prediction`
-    objects to plain Python lists of strings. It also attempts to extract
-    LM usage (tokens) when `track_usage` is enabled.
+    The function instantiates a DSPy predictor using the documented
+    entrypoints (`dspy.Predict`) and returns that Predict object. Callers
+    should invoke the returned object to obtain Prediction-like results
+    (which expose `.tags` and optionally `.get_lm_usage()`), or call
+    `.batch()` when supported.
     """
     track_usage = os.environ.get("RAINDROP_DSPY_TRACK_USAGE", "0") == "1"
     try:
@@ -95,23 +96,6 @@ def configure_dspy() -> Callable[[str], Tuple[List[str], Optional[int]]]:
             text: str = dspy.InputField(description="Input text for tag generation.")
             tags: List[str] = dspy.OutputField(description="List of tags most relevant to the input text.")
 
-        pred = dspy.Predict(_TagSignature)
-
-        def predictor(text: str) -> Tuple[List[str], Optional[int]]:
-            prediction = pred(text=text)
-            tokens_used: Optional[int] = None
-            if track_usage:
-                try:
-                    usage = prediction.get_lm_usage()
-                    if hasattr(usage, "total_tokens"):
-                        tokens_used = int(getattr(usage, "total_tokens"))
-                    elif hasattr(usage, "tokens"):
-                        tokens_used = int(getattr(usage, "tokens"))
-                except Exception:
-                    tokens_used = None
-
-            return prediction.tags, tokens_used
-
-        return predictor
+        return dspy.Predict(_TagSignature)
     except Exception as e:
         raise DSPyConfigError(f"Failed to configure DSPy predictor: {e}")

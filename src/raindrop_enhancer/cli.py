@@ -486,14 +486,32 @@ def tags_generate(
             click.echo(f"DSPy configuration required but missing: {e}", err=True)
             raise SystemExit(2)
 
-        # fallback fake predictor for dry-run and testing
-        def fake_predictor(prompt: str):
-            # naive tag extraction: split by spaces, take first 2-word tokens
-            parts = prompt.split()
-            tags = [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
-            return (tags, None)
+        # fallback fake predictor for dry-run and testing: provide a
+        # dspy.Predict-like object that returns Prediction-like results.
+        class FakePrediction:
+            def __init__(self, tags, tokens=None):
+                self.tags = tags
+                class U:
+                    def __init__(self, tokens):
+                        self.total_tokens = tokens
+                self._usage = U(tokens) if tokens is not None else None
 
-        pw = fake_predictor
+            def get_lm_usage(self):
+                return self._usage
+
+        class FakePredict:
+            def __call__(self, prompt: str):
+                parts = prompt.split()
+                tags = [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
+                return FakePrediction(tags, tokens=None)
+
+            def batch(self, prompts):
+                out = []
+                for p in prompts:
+                    out.append(self.__call__(p))
+                return out
+
+        pw = FakePredict()
 
     runner = TagGenerationRunner(pw, model_name=model_name, batch_size=5)
 

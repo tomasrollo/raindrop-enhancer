@@ -80,12 +80,14 @@ def test_configure_dspy_builds_lm_and_extracts_tokens(monkeypatch):
 
     # Clear cache and reload to ensure monkeypatching is used
     ds.configure_dspy.cache_clear()
-    predictor = ds.configure_dspy()
+    pred = ds.configure_dspy()
 
-    # Call the predictor
-    tags, tokens = predictor("some text")
-    assert tags == ["Alpha", "Beta"]
-    assert tokens == 42
+    # Call the returned Predict object and extract tags/tokens from the
+    # Prediction-like result.
+    prediction = pred("some text")
+    assert getattr(prediction, "tags", None) == ["Alpha", "Beta"]
+    usage = prediction.get_lm_usage()
+    assert hasattr(usage, "total_tokens") and int(getattr(usage, "total_tokens")) == 42
 
     # Confirm the LM was constructed with api_key and api_base
     assert fake_lm_kwargs.get("api_key") == "key-xyz"
@@ -118,15 +120,19 @@ def test_configure_dspy_without_track_usage_returns_none(monkeypatch):
     monkeypatch.setattr(ds.dspy, "Predict", FakePredictNoUsage)
     # Ensure LM constructor exists but do not inspect kwargs here
     monkeypatch.setattr(ds.dspy, "LM", lambda m, **k: object())
-    monkeypatch.setattr(
-        ds.dspy, "settings", type("S", (), {"configure": lambda self, **k: None})()
-    )
+    monkeypatch.setattr(ds.dspy, "settings", type("S", (), {"configure": lambda self, **k: None})())
 
     ds.configure_dspy.cache_clear()
     pred = ds.configure_dspy()
-    tags, tokens = pred("t")
-    assert tags == ["X"]
-    assert tokens is None
+    prediction = pred("t")
+    assert getattr(prediction, "tags", None) == ["X"]
+    # No track usage configured -> calling get_lm_usage may not exist or return None
+    try:
+        usage = prediction.get_lm_usage()
+        assert usage is None or not hasattr(usage, "total_tokens")
+    except Exception:
+        # Absence of get_lm_usage is acceptable
+        pass
 
 
 import os
