@@ -61,6 +61,10 @@ class SQLiteStore:
         self.conn.row_factory = sqlite3.Row
         self._enable_wal()
         self._ensure_schema()
+        # Automatically apply schema evolutions so callers do not need
+        # a separate migration step when new features add columns.
+        self._ensure_content_columns()
+        self._ensure_tagging_columns()
 
     def close(self) -> None:
         if self.conn:
