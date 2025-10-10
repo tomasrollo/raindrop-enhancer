@@ -65,7 +65,7 @@ def _configure_logging(quiet: bool, verbose: bool) -> None:
     default=120,
     help="Requests per minute to honor when enforcing rate-limit",
 )
-def main(
+def export(
     output: str,
     quiet: bool,
     verbose: bool,
@@ -122,9 +122,7 @@ def main(
         # returned by the /collections endpoint. Ensure we always fetch it
         # so users don't miss those raindrops.
         try:
-            has_unsorted = any(
-                (c.get("_id") == -1 or c.get("id") == -1) for c in collections
-            )
+            has_unsorted = any((c.get("_id") == -1 or c.get("id") == -1) for c in collections)
         except Exception:
             has_unsorted = False
         if not has_unsorted:
@@ -154,9 +152,7 @@ def main(
                 BarColumn(),
                 TimeElapsedColumn(),
             ) as progress:
-                task = progress.add_task(
-                    "Fetching collections and raindrops", total=len(collections) or None
-                )
+                task = progress.add_task("Fetching collections and raindrops", total=len(collections) or None)
                 for c in collections:
                     cid = c.get("_id") or c.get("id")
                     if cid is None:
@@ -179,9 +175,7 @@ def main(
 
         if dry_run:
             click.echo(f"Dry run: collected {len(active)} active raindrops")
-            click.echo(
-                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
-            )
+            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
             return
 
         ctx = nullcontext()
@@ -195,26 +189,16 @@ def main(
 
         # Summary metrics
         if not quiet:
-            click.echo(
-                f"Exported {len(active)} raindrops from {len(collections)} collections"
-            )
-            click.echo(
-                f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s"
-            )
+            click.echo(f"Exported {len(active)} raindrops from {len(collections)} collections")
+            click.echo(f"Requests made: {requests_made}; Retries: {len(retries)}; Elapsed: {elapsed:.2f}s")
 
     finally:
         client.close()
 
 
-if __name__ == "__main__":
-    main()
-
-
 @click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option(
-    "--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)"
-)
+@click.option("--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)")
 @click.option("--dry-run", is_flag=True, help="Run without writing to DB")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
@@ -269,9 +253,7 @@ def sync(
     def on_retry(url: str, attempt: int, delay: float) -> None:
         retries.append((url, attempt, delay))
         if verbose and not quiet:
-            click.echo(
-                f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True
-            )
+            click.echo(f"Retrying {url} (attempt {attempt}) - sleeping {delay:.2f}s", err=True)
 
     client.on_request = on_request
     client.on_retry = on_retry
@@ -312,20 +294,14 @@ def sync(
         )
     else:
         if not quiet:
-            click.echo(
-                f"Synced {outcome.total_links} total links (+{outcome.new_links} new)"
-            )
-            click.echo(
-                f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}"
-            )
+            click.echo(f"Synced {outcome.total_links} total links (+{outcome.new_links} new)")
+            click.echo(f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}")
 
 
-@click.command(name="capture-content")
+@click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
-@click.option(
-    "--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done"
-)
+@click.option("--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done")
 @click.option("--refresh", is_flag=True, help="Refresh existing captured content")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--timeout", default=10.0, type=float, help="Per-link fetch timeout (s)")
@@ -345,10 +321,12 @@ def capture_content(
 
     Dry-run by default; will be wired to the full runner once implemented.
     """
+    from .content.capture_runner import CaptureRunner
+
+    # Local imports kept inside the command for faster CLI import and test isolation
     from .storage.sqlite_store import SQLiteStore
     from .sync.orchestrator import default_db_path
     from .content.fetcher import TrafilaturaFetcher
-    from .content.capture_runner import CaptureRunner
 
     if quiet:
         logging.basicConfig(level=logging.WARNING)
@@ -382,9 +360,7 @@ def capture_content(
                 {
                     "session": {
                         "started_at": summary.started_at.isoformat(),
-                        "completed_at": summary.completed_at.isoformat()
-                        if summary.completed_at
-                        else None,
+                        "completed_at": summary.completed_at.isoformat() if summary.completed_at else None,
                     },
                     "attempts": [a.__dict__ for a in attempts],
                 }
@@ -396,11 +372,9 @@ def capture_content(
         raise SystemExit(1)
 
 
-@click.command(name="migrate")
+@click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option(
-    "--target", default="content-markdown", help="Migration target identifier"
-)
+@click.option("--target", default="content-markdown", help="Migration target identifier")
 @click.option("--yes", is_flag=True, help="Apply migration without prompting")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
@@ -424,9 +398,7 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
         raise SystemExit(2)
 
     if not yes:
-        confirmed = click.confirm(
-            f"Proceed to migrate database at {dbp}? This will create a backup."
-        )
+        confirmed = click.confirm(f"Proceed to migrate database at {dbp}? This will create a backup.")
         if not confirmed:
             click.echo("Migration cancelled by user")
             return
@@ -460,17 +432,10 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
         raise SystemExit(1)
 
 
-@click.group()
-def tags():
-    """Tag-related commands (auto-tagging using DSPy)."""
-
-
-@tags.command(name="generate")
+@click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
-@click.option(
-    "--dry-run", is_flag=True, help="Do not persist tags; just show what would be done"
-)
+@click.option("--dry-run", is_flag=True, help="Do not persist tags; just show what would be done")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 @click.option("--verbose", is_flag=True, help="Verbose output")
@@ -488,7 +453,7 @@ def tags_generate(
     verbose: bool,
     fail_on_error: bool,
 ):
-    """Generate auto-tags for untagged links and optionally persist them."""
+    """Generate auto-tags for untagged links"""
     from .sync.orchestrator import default_db_path
     from .storage.sqlite_store import SQLiteStore
     from .content.tag_generator import TagGenerationRunner
@@ -520,7 +485,16 @@ def tags_generate(
         # predictor is a callable prompt -> (list[str], Optional[int])
         pw = predictor
     except DSPyConfigError as e:
-        click.echo(f"DSPy configuration required but missing: {e}", err=True)
+        # Provide an explicit, actionable message to help users install/configure DSPy.
+        click.echo(
+            "DSPy configuration required but missing: {}\n".format(e),
+            err=True,
+        )
+        click.echo(
+            "To enable auto-tagging install DSPy: `uv add dspy` or `pip install dspy`\n"
+            "Or run: `uv run pip install dspy` if using uv-managed environments.",
+            err=True,
+        )
         raise SystemExit(2)
 
     runner = TagGenerationRunner(predictor, model_name=model_name, batch_size=5)
@@ -563,9 +537,7 @@ def tags_generate(
             BarColumn(),
             TimeElapsedColumn(),
         ) as progress:
-            task = progress.add_task(
-                f"Tagging links (model={model_name})", total=total or None
-            )
+            task = progress.add_task(f"Tagging links (model={model_name})", total=total or None)
 
             def on_result_with_advance(e: dict) -> None:
                 _on_result(e)
@@ -616,3 +588,23 @@ def tags_generate(
 
     if fail_on_error and counters["failed"] > 0:
         raise SystemExit(4)
+
+
+@click.group()
+def cli():
+    """Unified CLI entrypoint for raindrop-enhancer."""
+
+
+# Top-level CLI group: register existing commands as subcommands to provide
+# a single entrypoint `raindrop-enhancer`
+for cmd, name in [
+    (export, "export"),
+    (sync, "sync"),
+    (capture_content, "capture"),
+    (migrate, "migrate"),
+    (tags_generate, "tag"),
+]:
+    try:
+        cli.add_command(cmd, name=name)
+    except Exception as e:
+        logging.error(f"Failed to add command '{name}': {e}")

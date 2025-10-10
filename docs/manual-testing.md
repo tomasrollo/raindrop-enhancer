@@ -14,16 +14,16 @@ Manual test steps
 
 1. Dry run (connectivity + token validation)
 
-- Command:
-  uv run raindrop-export --dry-run --verbose
+-- Command:
+  uv run raindrop-enhancer export --dry-run --verbose
 - Expected:
   - CLI loads `.env` and validates the token.
   - Prints a list of collections with counts and exits with code 0.
 
 2. Successful export to stdout
 
-- Command:
-  uv run raindrop-export --verbose
+-- Command:
+  uv run raindrop-enhancer export --verbose
 - Expected:
   - CLI shows progress bars for collections and items.
   - Outputs a JSON array to stdout with raindrop objects containing required fields: id, collection_id, title, url, created_at, last_updated_at, tags.
@@ -31,8 +31,8 @@ Manual test steps
 
 3. Export to file
 
-- Command:
-  uv run raindrop-export --output exported.json --verbose
+-- Command:
+  uv run raindrop-enhancer export --output exported.json --verbose
 - Expected:
   - File `exported.json` is created with the JSON array.
   - File is valid JSON (parse with `jq '.' exported.json`).
@@ -64,7 +64,7 @@ Notes
 - Baseline sync (first run creates DB):
 
   ```bash
-  uv run raindrop-sync --db-path ./tmp/raindrops.db --json
+  uv run raindrop-enhancer sync --db-path ./tmp/raindrops.db --json
   ```
 
   Expected:
@@ -74,7 +74,7 @@ Notes
 - Incremental sync (no new items):
 
   ```bash
-  uv run raindrop-sync --db-path ./tmp/raindrops.db --json
+  uv run raindrop-enhancer sync --db-path ./tmp/raindrops.db --json
   ```
 
   Expected:
@@ -83,7 +83,7 @@ Notes
 - Full refresh (rebuild):
 
   ```bash
-  uv run raindrop-sync --db-path ./tmp/raindrops.db --full-refresh --json
+  uv run raindrop-enhancer sync --db-path ./tmp/raindrops.db --full-refresh --json
   ```
 
   Expected:
@@ -94,7 +94,7 @@ Notes
 - Dry-run preview (no mutations):
 
   ```bash
-  uv run capture-content --dry-run --limit 5 --verbose
+  uv run raindrop-enhancer capture --dry-run --limit 5 --verbose
   ```
 
   Expected:
@@ -103,7 +103,7 @@ Notes
 - Execute capture (writes Markdown into DB):
 
   ```bash
-  uv run capture-content --limit 100
+  uv run raindrop-enhancer capture --limit 100
   ```
 
   Expected:
@@ -113,7 +113,7 @@ Notes
 - Refresh existing content (overwrite):
 
   ```bash
-  uv run capture-content --refresh --limit 10
+  uv run raindrop-enhancer capture --refresh --limit 10
   ```
 
   Expected:
@@ -154,7 +154,7 @@ PY
 - Dry-run (no DB writes):
 
 ```bash
-uv run raindrop-tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --dry-run --verbose
 ```
 
 Expected:
@@ -163,7 +163,7 @@ Expected:
 - Persist generated tags (writes to DB):
 
 ```bash
-uv run raindrop-tags generate --db-path ./tmp/raindrops.db
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db
 ```
 
 Expected:

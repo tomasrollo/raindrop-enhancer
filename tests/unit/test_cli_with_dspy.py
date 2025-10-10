@@ -34,12 +34,13 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     # Run CLI with dry-run to avoid writing DB
     from raindrop_enhancer import cli as cli_mod
 
+    # Use strict top-level `cli` group
+    entry = cli_mod.cli
+
     runner = CliRunner()
     db_file = tmp_path / "links.db"
 
-    result = runner.invoke(
-        cli_mod.tags, ["generate", "--db-path", str(db_file), "--dry-run"]
-    )
+    result = runner.invoke(entry, ["tag", "--db-path", str(db_file), "--dry-run"])
 
     assert result.exit_code == 0
     # Output should indicate at least one processed link

@@ -30,11 +30,7 @@ dev = [
 asyncio_mode = "auto"
 
 [project.scripts]
-raindrop-export = "raindrop_enhancer.cli:main"
-raindrop-sync = "raindrop_enhancer.cli:sync"
-capture-content = "raindrop_enhancer.cli:capture_content"
-raindrop-migrate = "raindrop_enhancer.cli:migrate"
-raindrop-tags = "raindrop_enhancer.cli:tags"
+raindrop-enhancer = "raindrop_enhancer.cli:cli"
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]
