@@ -47,6 +47,8 @@ def test_missing_dspy(monkeypatch):
         # If import fails, skip the assertion (TDD stage)
         return
 
-    result = runner.invoke(entry, ["tag", "generate"])
+    # New CLI layout exposes a single `tag` subcommand (no nested `generate`),
+    # invoke via the top-level entrypoint.
+    result = runner.invoke(entry, ["tag"])
     assert result.exit_code == 2
     assert "DSPy configuration required" in result.output or "dspy" in result.output

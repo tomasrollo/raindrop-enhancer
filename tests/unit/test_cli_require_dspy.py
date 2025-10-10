@@ -16,7 +16,11 @@ def test_require_dspy_exits_when_missing(monkeypatch, tmp_path):
         monkeypatch.delenv(v, raising=False)
 
     # Import here so environment changes take effect before CLI loads modules
-    from raindrop_enhancer.cli import tag
+    import raindrop_enhancer.cli as cli_mod
+
+    entry = getattr(cli_mod, "cli", None)
+    if entry is None:
+        entry = getattr(cli_mod, "tag", None)
 
     runner = CliRunner()
 
@@ -38,7 +42,8 @@ def test_require_dspy_exits_when_missing(monkeypatch, tmp_path):
         pass
 
     # DSPy is now mandatory; running without configuration should exit 2
-    result = runner.invoke(tag, ["generate", "--dry-run", "--db-path", str(db_file)])
+    # New CLI layout: invoke `tag` as a top-level subcommand
+    result = runner.invoke(entry, ["tag", "--dry-run", "--db-path", str(db_file)])
 
     assert result.exit_code == 2
     combined = (result.stderr or "") + (result.output or "")
