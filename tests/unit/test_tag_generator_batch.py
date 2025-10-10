@@ -9,11 +9,11 @@ def test_tag_generation_runner_uses_batch_api():
         def __init__(self):
             self.batch_called = False
 
-        def __call__(self, prompt: str):
-            # Per-item behavior: derive tag and token count from the prompt
+        def __call__(self, *, text: str):
+            # Per-item behavior: derive tag and token count from the prompt (keyword-only 'text')
             idx = 0
             try:
-                after = prompt.split("Title:", 1)[1]
+                after = text.split("Title:", 1)[1]
                 import re
 
                 m = re.search(r"(\d+)", after)

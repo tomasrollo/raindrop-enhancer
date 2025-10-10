@@ -29,7 +29,7 @@ def test_cli_tags_generate_option_parsing(monkeypatch, tmp_path: Path):
             return None
 
     class FakePredict:
-        def __call__(self, prompt: str):
+        def __call__(self, *, text: str):
             return FakePrediction(["auto tag 1", "auto tag 2"])
 
     monkeypatch.setattr(ds, "configure_dspy", lambda: FakePredict())

@@ -18,7 +18,7 @@ def test_persistence_failure_returns_3(monkeypatch, tmp_path):
             return None
 
     class FakePredict:
-        def __call__(self, prompt: str):
+        def __call__(self, *, text: str):
             return FakePrediction(["tag"])
 
     monkeypatch.setattr(ds, "configure_dspy", lambda: FakePredict())
@@ -80,7 +80,7 @@ def test_fail_on_error_returns_4(monkeypatch, tmp_path):
             return None
 
     class FakePredict:
-        def __call__(self, prompt: str):
+        def __call__(self, *, text: str):
             return FakePrediction([])
 
     monkeypatch.setattr(ds, "configure_dspy", lambda: FakePredict())

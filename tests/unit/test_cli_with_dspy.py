@@ -16,7 +16,7 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
             return None
 
     class FakePredict:
-        def __call__(self, prompt: str):
+        def __call__(self, *, text: str):
             return FakePrediction(["alpha", "beta"])
 
     monkeypatch.setattr(ds, "configure_dspy", lambda: FakePredict())
