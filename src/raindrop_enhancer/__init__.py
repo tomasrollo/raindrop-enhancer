@@ -1,8 +1,10 @@
 """raindrop_enhancer package.
 
-Expose CLI entrypoint symbol for project.scripts `raindrop-export`.
+Expose unified CLI entrypoint symbol for project.scripts `raindrop-enhancer`.
+The top-level Click group `cli` provides subcommands: export, sync, capture,
+migrate, and tag.
 """
 
-from .cli import main  # re-export for entrypoint
+from . import cli as cli  # re-export the cli module so package import yields the module
 
-__all__ = ["main"]
+__all__ = ["cli"]

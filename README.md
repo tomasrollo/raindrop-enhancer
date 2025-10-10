@@ -8,7 +8,7 @@ This project uses `uv` for Python package, dependency, and build management. Use
 
 ## Quickstart (summary)
 
-CLI: `raindrop-export`
+CLI: `raindrop-enhancer <subcommand>`
 
 - Default behavior: outputs a JSON array of active raindrops to stdout.
 - Common flags:
@@ -21,12 +21,12 @@ CLI: `raindrop-export`
 Run example:
 
 ```bash
-uv run raindrop-export --verbose --output my_raindrops.json
+uv run raindrop-enhancer export --verbose --output my_raindrops.json
 ```
 
 ## Database-backed sync
 
-The project includes a `raindrop-sync` command which persists raindrops into a local
+The project includes a `raindrop-enhancer sync` command which persists raindrops into a local
 SQLite database and supports incremental runs via a recorded cursor.
 
 Default DB locations:
@@ -38,13 +38,13 @@ Default DB locations:
 Run a baseline sync:
 
 ```bash
-uv run raindrop-sync --json
+uv run raindrop-enhancer sync --json
 ```
 
 Use `--db-path` to override the DB file location for testing:
 
 ```bash
-uv run raindrop-sync --db-path ./tmp/test.db --json
+uv run raindrop-enhancer sync --db-path ./tmp/test.db --json
 ```
 
 ## Capture content
@@ -83,10 +83,10 @@ CLI examples (YouTube capture)
 
 ```bash
 # Dry-run: show what would be processed (no DB writes)
-uv run capture-content --db-path ./tmp/test.db --dry-run --limit 10
+uv run raindrop-enhancer capture --db-path ./tmp/test.db --dry-run --limit 10
 
 # Process links and persist fetched YouTube metadata when present
-uv run capture-content --db-path ./tmp/raindrops.db --limit 200
+uv run raindrop-enhancer capture --db-path ./tmp/raindrops.db --limit 200
 ```
 
 ### Migration note
@@ -96,7 +96,7 @@ You can add the `content_markdown` and `content_fetched_at` columns to your exis
 Run the migrate command (recommended):
 
 ```bash
-uv run raindrop-migrate --db-path ~/.local/share/raindrop_enhancer/raindrops.db --target content-markdown --yes
+uv run raindrop-enhancer migrate --db-path ~/.local/share/raindrop_enhancer/raindrops.db --target content-markdown --yes
 ```
 
 This will create a timestamped backup of the DB and then ensure the `content_markdown`, `content_fetched_at`, and `content_source` columns exist. Omit `--yes` to be prompted for confirmation.
@@ -140,13 +140,13 @@ You can generate auto-tags for links stored in the local SQLite DB using the DSP
 Basic dry-run (no DB writes):
 
 ```bash
-uv run raindrop-tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db --dry-run --verbose
 ```
 
 Persist generated tags (writes to DB):
 
 ```bash
-uv run raindrop-tags generate --db-path ./tmp/raindrops.db
+uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db
 ```
 
 Important flags:

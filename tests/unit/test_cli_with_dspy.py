@@ -37,9 +37,7 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     runner = CliRunner()
     db_file = tmp_path / "links.db"
 
-    result = runner.invoke(
-        cli_mod.tags, ["generate", "--db-path", str(db_file), "--dry-run"]
-    )
+    result = runner.invoke(cli_mod.tag, ["generate", "--db-path", str(db_file), "--dry-run"])
 
     assert result.exit_code == 0
     # Output should indicate at least one processed link

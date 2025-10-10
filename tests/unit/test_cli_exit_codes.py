@@ -59,7 +59,7 @@ def test_persistence_failure_returns_3(monkeypatch, tmp_path):
 
     runner = CliRunner()
     db_file = tmp_path / "links.db"
-    result = runner.invoke(cli_mod.tags, ["generate", "--db-path", str(db_file)])
+    result = runner.invoke(cli_mod.tag, ["generate", "--db-path", str(db_file)])
 
     assert result.exit_code == 3
     assert "persist" in (result.stderr or "") or "persist" in (result.output or "")
@@ -89,9 +89,7 @@ def test_fail_on_error_returns_4(monkeypatch, tmp_path):
     # Make run_batch emit one failed entry (empty tags)
     def fake_run_batch_fail(self, items, on_result):
         for i, it in enumerate(items, start=1):
-            on_result(
-                {"raindrop_id": i, "tags_json": "[]", "meta_json": json.dumps({})}
-            )
+            on_result({"raindrop_id": i, "tags_json": "[]", "meta_json": json.dumps({})})
 
     from raindrop_enhancer.content.tag_generator import TagGenerationRunner as TGR
 
@@ -111,7 +109,7 @@ def test_fail_on_error_returns_4(monkeypatch, tmp_path):
 
     # Use --dry-run to avoid persistence and --json to exercise JSON path
     result = runner.invoke(
-        cli_mod.tags,
+        cli_mod.tag,
         [
             "generate",
             "--db-path",

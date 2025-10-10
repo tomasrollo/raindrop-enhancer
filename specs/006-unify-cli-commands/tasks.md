@@ -8,12 +8,14 @@ Order: TDD-first, setup -> contract tests -> unit/integration tests -> implement
 Parallelizable tasks are marked [P]. Tasks that must run sequentially are unmarked.
 
 T001 - Setup: Ensure development tooling and CI gates (SEQUENTIAL)
+- Status: completed
 - Purpose: Ensure consistent dev environment and CI gate compliance per Constitution.
 - Edits / Commands:
   - Verify `pyproject.toml` contains dev dependency group for `pytest`, `pytest-httpx`, `pytest-asyncio`
   - Files: `/Users/tomas/Documents/projects/raindrop-enhancer/pyproject.toml`
 
 T002 - Contract tests: Top-level help and per-subcommand help snapshots [P]
+- Status: completed
 - Purpose: Capture and lock top-level and subcommand help outputs.
 - Test to add: `tests/contract/test_cli_help.py`
 - Test actions:
@@ -23,6 +25,7 @@ T002 - Contract tests: Top-level help and per-subcommand help snapshots [P]
 - Dependencies: uses current `src/raindrop_enhancer/cli.py` imports; ensure entrypoint callable via Click group when implemented.
 
 T003 - Contract tests: Missing prerequisites behavior (RAINDROP_TOKEN, dspy) [P]
+- Status: completed
 - Purpose: Validate clear error messages and exit codes for missing prerequisites.
 - Tests to add: `tests/contract/test_cli_missing_prereqs.py`
 - Test cases:
@@ -31,6 +34,7 @@ T003 - Contract tests: Missing prerequisites behavior (RAINDROP_TOKEN, dspy) [P]
 - Files to create: `tests/contract/test_cli_missing_prereqs.py`
 
 T004 - Contract tests: JSON output schema validation [P]
+- Status: completed
 - Purpose: Ensure `--json` outputs valid JSON with expected keys.
 - Tests to add: `tests/contract/test_cli_json_outputs.py`
 - Test cases:
@@ -40,6 +44,7 @@ T004 - Contract tests: JSON output schema validation [P]
 - Files to create: `tests/contract/test_cli_json_outputs.py`
 
 T005 - Integration tests: Quickstart scenarios [P]
+- Status: completed
 - Purpose: Implement integration tests that mirror `quickstart.md` happy paths.
 - Tests to add: `tests/integration/test_quickstart_export_sync_capture.py`
 - Scenarios:
@@ -49,6 +54,7 @@ T005 - Integration tests: Quickstart scenarios [P]
 - Files to create: `tests/integration/test_quickstart_export_sync_capture.py`
 
 T006 - Unit tests: CLI flag handling and logging behavior [P]
+- Status: completed
 - Purpose: Ensure `--quiet`/`--verbose`/`--dry-run` flags alter behavior as expected.
 - Tests to add: `tests/unit/test_cli_flags.py`
 - Cases:
@@ -57,6 +63,7 @@ T006 - Unit tests: CLI flag handling and logging behavior [P]
 - Files to create: `tests/unit/test_cli_flags.py`
 
 T007 - Implementation: Add `raindrop-enhancer` console script in `pyproject.toml` (SEQUENTIAL)
+- Status: completed
 - Purpose: Add new entrypoint and remove legacy console scripts per FR-005.
 - Edits:
   - Update `pyproject.toml` [project.scripts]: remove `raindrop-export`, `raindrop-sync`, `capture-content`, `raindrop-migrate`, `raindrop-tags` keys and add `raindrop-enhancer = "raindrop_enhancer.cli:cli"` (or the Click group function path). Ensure naming matches module's Click group (create group function if needed).
@@ -64,6 +71,7 @@ T007 - Implementation: Add `raindrop-enhancer` console script in `pyproject.toml
   - Note: This is a breaking change — ensure tests updated to call the new entrypoint.
 
 T008 - Implementation: Convert existing command functions into Click subcommands under a Click group (SEQUENTIAL)
+- Status: completed
 - Purpose: Wire current `main`, `sync`, `capture_content`, `migrate`, and tags commands into a single Click group function.
 - Edits:
   - Modify `/Users/tomas/Documents/projects/raindrop-enhancer/src/raindrop_enhancer/cli.py`:
@@ -73,23 +81,26 @@ T008 - Implementation: Convert existing command functions into Click subcommands
   - Files: `/Users/tomas/Documents/projects/raindrop-enhancer/src/raindrop_enhancer/cli.py`
 
 T009 - Implementation: Update tagging flow to implement FR-006 behavior (SEQUENTIAL)
+- Status: completed
 - Purpose: Ensure `tag generate` prints actionable error when DSPy missing and exit `2`.
 - Edits:
   - In `tags_generate`, catch `DSPyConfigError` and ensure stderr message contains `pip install dspy` and exit code `2` (currently raises SystemExit(2) but ensure message includes install guidance).
   - Files: `/Users/tomas/Documents/projects/raindrop-enhancer/src/raindrop_enhancer/cli.py` and `/Users/tomas/Documents/projects/raindrop-enhancer/src/raindrop_enhancer/content/dspy_settings.py`
 
 T010 - Tests: Update existing tests referencing old console scripts (SEQUENTIAL)
+- Status: completed
 - Purpose: Migrate tests to invoke `raindrop-enhancer` entrypoint instead of legacy script names.
 - Edits:
   - Search in `tests/` for usages of `raindrop-export`, `raindrop-sync`, `capture-content`, `raindrop-migrate`, `raindrop-tags` and replace with `raindrop-enhancer <subcommand>` or adjust to call Click commands via `CliRunner`.
   - Files: multiple under `/Users/tomas/Documents/projects/raindrop-enhancer/tests/` (update in-place).
 
 T011 - Implementation: Update README, quickstart, and CHANGELOG (SEQUENTIAL)
-- Purpose: Document new invocation and migration steps.
-- Edits:
-  - Update `README.md` usage examples to use `raindrop-enhancer`.
-  - Add change note describing removal of legacy scripts and example sed snippet from `quickstart.md`.
-  - Files: `/Users/tomas/Documents/projects/raindrop-enhancer/README.md`, `/Users/tomas/Documents/projects/raindrop-enhancer/specs/006-unify-cli-commands/quickstart.md`
+  - Purpose: Document new invocation and migration steps.
+  - Edits:
+    - Update `README.md` usage examples to use `raindrop-enhancer`.
+    - Add change note describing removal of legacy scripts and example sed snippet from `quickstart.md`.
+    - Files: `/Users/tomas/Documents/projects/raindrop-enhancer/README.md`, `/Users/tomas/Documents/projects/raindrop-enhancer/specs/006-unify-cli-commands/quickstart.md`
+  - Status: completed
 
 T012 - Polish: Lint, types, and CI (P)
 - Purpose: Run formatting, linting, typing, and full tests.
