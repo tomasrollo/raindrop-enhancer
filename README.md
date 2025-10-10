@@ -6,28 +6,59 @@ See the project Constitution at `.specify/memory/constitution.md` for core princ
 
 This project uses `uv` for Python package, dependency, and build management. Use `uv run` for commands and keep lockfiles current via `uv lock`/`uv sync`.
 
-## Quickstart (summary)
+## Quickstart
 
-CLI: `raindrop-enhancer <subcommand>`
+1. Install project dependencies with `uv sync`.
+2. Provide a Raindrop API token via `.env` (`RAINDROP_TOKEN=...`) or your shell when you intend to call the Raindrop API (`export` and `sync`).
+3. Inspect available commands with:
+   ```bash
+   uv run raindrop-enhancer --help
+   ```
 
-- Default behavior: outputs a JSON array of active raindrops to stdout.
-- Common flags:
-	- `--output <path>`: write JSON to a file instead of stdout.
-	- `--quiet`: suppress progress/status messages.
-	- `--verbose`: enable structured logging and detailed progress.
-	- `--dry-run`: validate token and list collection counts without exporting raindrops.
-	- `--pretty`: show a human-friendly summary table (instead of JSON).
-
-Run example:
+Example export:
 
 ```bash
 uv run raindrop-enhancer export --verbose --output my_raindrops.json
 ```
 
-## Database-backed sync
+Each subcommand also supports `--help` to list its flags.
 
-The project includes a `raindrop-enhancer sync` command which persists raindrops into a local
-SQLite database and supports incremental runs via a recorded cursor.
+## Command reference
+
+All commands run as `uv run raindrop-enhancer <command> [options]`.
+
+### Export (`raindrop-enhancer export`)
+
+Fetch all active raindrops from the API and emit JSON to stdout or a file. **Requires** `RAINDROP_TOKEN`.
+
+Options:
+- `--output PATH` (default `-`): write JSON to a file instead of stdout.
+- `--dry-run`: validate the token and list counts without writing output.
+- `--pretty`: pretty-print JSON output.
+- `--quiet` / `--verbose`: adjust logging verbosity.
+- `--enforce-rate-limit/--no-enforce-rate-limit` (default `--no-enforce-rate-limit`): throttle requests.
+- `--rate-limit N` (default `120`): requests per minute when rate limiting.
+
+Exit codes: `0` success, `2` when `RAINDROP_TOKEN` is missing.
+
+Example:
+
+```bash
+uv run raindrop-enhancer export --dry-run --verbose
+```
+
+### Sync (`raindrop-enhancer sync`)
+
+Synchronize the Raindrop archive into a local SQLite database (incremental by default). **Requires** `RAINDROP_TOKEN`.
+
+Options:
+- `--db-path PATH`: override the database path (defaults to a platform config directory).
+- `--full-refresh`: back up the existing DB, recreate schema, and perform a fresh sync.
+- `--dry-run`: simulate without touching the DB.
+- `--json`: emit a JSON summary instead of human-readable output.
+- `--quiet` / `--verbose`: control logging noise.
+- `--enforce-rate-limit/--no-enforce-rate-limit` (default `--enforce-rate-limit`): throttle requests.
+- `--rate-limit N` (default `120`): requests per minute when rate limiting.
 
 Default DB locations:
 
@@ -35,33 +66,38 @@ Default DB locations:
 - Linux: `~/.local/share/raindrop_enhancer/raindrops.db`
 - Windows: `%APPDATA%\\raindrop_enhancer\\raindrops.db`
 
-Run a baseline sync:
+Exit codes: `0` success, `1` on orchestrator error, `2` when `RAINDROP_TOKEN` is missing.
+
+Example:
 
 ```bash
-uv run raindrop-enhancer sync --json
+uv run raindrop-enhancer sync --db-path ./tmp/raindrops.db --json
 ```
 
-Use `--db-path` to override the DB file location for testing:
+### Capture (`raindrop-enhancer capture`)
+
+Populate the SQLite store with Markdown content for saved links using Trafilatura and YouTube-specific handling.
+
+Options:
+- `--db-path PATH`: point at an alternate database (defaults to the sync location).
+- `--limit N`: cap how many links to process.
+- `--dry-run`: report what would be captured without writing.
+- `--refresh`: re-fetch content even when already present.
+- `--json`: emit a JSON session summary.
+- `--timeout SECONDS` (default `10.0`): per-link fetch timeout.
+- `--quiet` / `--verbose`: control logging.
+
+Exit codes: `0` success, `1` when every processed link failed.
+
+Example:
 
 ```bash
-uv run raindrop-enhancer sync --db-path ./tmp/test.db --json
+uv run raindrop-enhancer capture --db-path ./tmp/raindrops.db --limit 50
 ```
 
-## Capture content
+#### YouTube links
 
-The project also includes a `capture-content` command to capture full-text Markdown for saved links and persist it into the SQLite database.
-
-Basic usage:
-
-```bash
-uv run capture-content --dry-run --limit 10 --verbose
-uv run capture-content --limit 100
-uv run capture-content --refresh --limit 50
-```
-
-## YouTube links
-
-The capture pipeline now includes special handling for YouTube video links. When a saved link is identified as a YouTube video the system will use `yt-dlp` to fetch the video's title and description (without downloading the full video) and save it into the `content_markdown` column as Markdown:
+When a link is detected as a YouTube URL the capture flow uses `yt-dlp` to fetch the title and description (without downloading the video) and stores them in Markdown:
 
 ```
 # {title}
@@ -69,29 +105,63 @@ The capture pipeline now includes special handling for YouTube video links. When
 {description}
 ```
 
-Behavior and notes:
-- Dependency: `yt-dlp` is added to the project's dependencies. Ensure your environment can install native wheels if required.
-- Timeout: the YouTube metadata fetch uses a 30-second timeout to avoid long hangs.
-- Failure modes:
-	- If the link is not a YouTube URL, capture falls back to Trafilatura as before.
-	- If the video is unavailable, the extractor records a short error code and the capture attempt is marked as failed; you can inspect the CLI output for details.
-	- If fetching metadata fails, the capture flow will not write partial/invalid content. Placeholder codes used in the data model include:
-		- `[YOUTUBE VIDEO NOT AVAILABLE]` when the video is known to be missing (integration-dependent)
-		- `[YOUTUBE METADATA FETCH FAILED]` when the extractor fails for other reasons
+Notes:
+- Timeout: metadata fetches use a 30-second timeout to avoid long hangs.
+- Failure handling: missing or failed videos record short error codes and do not write partial content.
+- Fallback: non-YouTube links fall back to Trafilatura automatically.
 
-CLI examples (YouTube capture)
+#### Automatic content columns
+
+The SQLite store adds the content-related columns (`content_markdown`, `content_fetched_at`, `content_source`) on connect, so no manual migration step is required.
+
+### Tag (`raindrop-enhancer tag`)
+
+Generate AI-assisted tags for links stored in the SQLite database using DSPy. Requires a configured DSPy predictor.
+
+Options:
+- `--db-path PATH`: override the database path.
+- `--limit N`: cap how many links to tag.
+- `--dry-run`: preview tags without writing.
+- `--json`: emit a JSON summary (`processed`, `generated`, `failed`, `db`, `model`).
+- `--quiet` / `--verbose`: adjust logging.
+- `--fail-on-error`: exit non-zero if any individual link failed to generate tags.
+
+Exit codes:
+- `0` success
+- `2` DSPy missing or misconfigured
+- `3` database write failure
+- `4` at least one link failed and `--fail-on-error` was supplied
+
+Examples:
 
 ```bash
-# Dry-run: show what would be processed (no DB writes)
-uv run raindrop-enhancer capture --db-path ./tmp/test.db --dry-run --limit 10
+# Dry-run without writing tags
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --dry-run --verbose
 
-# Process links and persist fetched YouTube metadata when present
-uv run raindrop-enhancer capture --db-path ./tmp/raindrops.db --limit 200
+# Persist generated tags and fail if any generation failed
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --fail-on-error
 ```
 
-### Content columns
+#### DSPy configuration
 
-The SQLite store ensures the content-related columns (`content_markdown`, `content_fetched_at`, `content_source`) exist whenever the database is opened. Older databases are upgraded automatically the next time you run `raindrop-enhancer capture` or interact with the store via Python.
+When tagging, the CLI loads DSPy configuration from environment variables read by `src/raindrop_enhancer/content/dspy_settings.py`:
+
+- `RAINDROP_DSPY_MODEL` — Optional override for the DSPy model (`provider/model`, default `openai/gpt-4o-mini`).
+- `RAINDROP_DSPY_TRACK_USAGE` — Set to `1` to enable token usage tracking (default `0`).
+- `RAINDROP_DSPY_{PROVIDER}_API_KEY` — Provider-specific API key (e.g. `RAINDROP_DSPY_OPENAI_API_KEY`).
+- `{PROVIDER}_API_KEY` — Common provider fallbacks (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
+- `RAINDROP_DSPY_API_KEY` — Generic fallback API key.
+- `RAINDROP_DSPY_API_BASE` — Override API base URL (falls back to `{PROVIDER}_API_BASE` if present).
+
+Examples:
+
+```bash
+export RAINDROP_DSPY_OPENAI_API_KEY="sk-..."
+export RAINDROP_DSPY_MODEL="openai/gpt-4o-mini"
+export RAINDROP_DSPY_TRACK_USAGE=1
+```
+
+If DSPy cannot be configured, the command exits with code `2` and prints installation guidance (`uv add dspy` or `pip install dspy`).
 
 ## Troubleshooting
 
@@ -111,33 +181,6 @@ ENABLE_PERF=1 PERF_COUNT=50 PERF_MAX_SECONDS=5 uv run pytest tests/perf/test_syn
 ENABLE_PERF=1 PERF_BASELINE_COUNT=50 PERF_INCREMENTAL_COUNT=10 PERF_INCREMENTAL_MAX_SECONDS=2 uv run pytest tests/perf/test_sync_incremental.py
 ```
 
-## Auto-tagging (LLM-assisted)
-
-You can generate auto-tags for links stored in the local SQLite DB using the DSPy-powered tag generator.
-
-Basic dry-run (no DB writes):
-
-```bash
-uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --dry-run --verbose
-```
-
-Persist generated tags (writes to DB):
-
-```bash
-uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db
-```
-
-Important flags:
-- `--fail-on-error`: return non-zero exit code (4) if any individual link generation failed
-- `--json`: print a JSON summary (suitable for CI parsing)
-
-Exit codes:
-- `0` — success
-- `2` — DSPy required but not configured
-- `3` — persistence/write failure when saving generated tags
-- `4` — per-link generation failures when `--fail-on-error` is used
-
-
 Supported environment variables:
 - ENABLE_PERF: set to `1` to run perf tests (default: tests are skipped)
 - PERF_COUNT: number of synthetic items for baseline test (default: 1000)
@@ -150,30 +193,7 @@ These are small smoke-tests intended for quick local validation. For CI or large
 
 ### LLM / DSPy environment variables
 
-When using the auto-tagging feature the CLI configures DSPy (the DSPy library) and an underlying language model (LM). The following environment variables control that behavior; they are looked up by `src/raindrop_enhancer/content/dspy_settings.py`.
-
-- `RAINDROP_DSPY_MODEL` — Optional. DSPy model identifier in the form `<provider>/<model>` (example: `openai/gpt-4o-mini`). Default: `openai/gpt-4o-mini` when not set.
-- `RAINDROP_DSPY_TRACK_USAGE` — Optional. If set to `1` enables DSPy LM usage tracking so token counts may be recorded in generated metadata. Default: `0` (disabled).
-- `RAINDROP_DSPY_{PROVIDER}_API_KEY` — Optional. Provider-specific API key (e.g. `RAINDROP_DSPY_OPENAI_API_KEY`) — highest priority when present.
-- `{PROVIDER}_API_KEY` — Optional fallback for common provider env names (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
-- `RAINDROP_DSPY_API_KEY` — Optional fallback generic API key used if provider-specific keys are not present.
-- `RAINDROP_DSPY_API_BASE` — Optional. Custom API base URL for OpenAI-compatible or provider endpoints (e.g. for self-hosted or proxied endpoints). Falls back to `{PROVIDER}_API_BASE` if present.
-
-Examples:
-
-```bash
-# Preferred (provider-specific):
-export RAINDROP_DSPY_OPENAI_API_KEY="sk-..."
-
-# Or use the common name OpenAI expects:
-export OPENAI_API_KEY="sk-..."
-
-# Enable usage tracking to capture tokens used in metadata
-export RAINDROP_DSPY_TRACK_USAGE=1
-
-# Override model (optional; defaults to openai/gpt-4o-mini):
-export RAINDROP_DSPY_MODEL=openai/gpt-4o-mini
-```
+See the Tag command section (`README.md:117`) for details on configuring DSPy via environment variables.
 
 Notes:
 
