@@ -453,7 +453,7 @@ def tags_generate(
     verbose: bool,
     fail_on_error: bool,
 ):
-    """Generate auto-tags for untagged links and optionally persist them."""
+    """Generate auto-tags for untagged links"""
     from .sync.orchestrator import default_db_path
     from .storage.sqlite_store import SQLiteStore
     from .content.tag_generator import TagGenerationRunner
