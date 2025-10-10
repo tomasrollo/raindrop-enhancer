@@ -5,34 +5,22 @@ from click.testing import CliRunner
 
 def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     """Simulate DSPy being present: Predictor is callable and returns tags; CLI should exit 0."""
-    # Ensure env var is set so configure_dspy will attempt to build a predictor
-    monkeypatch.setenv("RAINDROP_DSPY_MODEL", "test:model")
-
-    # Import the dspy_settings module and clear any cached configure_dspy
+    # Ensure configure_dspy returns a fake predictor for the test
     from raindrop_enhancer.content import dspy_settings as ds
 
-    try:
-        ds.configure_dspy.cache_clear()
-    except Exception:
-        # If no cache attribute, ignore
-        pass
+    class FakePrediction:
+        def __init__(self, tags):
+            self.tags = tags
 
-    # Provide a fake dspy module with Predictor and settings.configure
-    class FakePred:
-        def __call__(self, prompt: str):
-            return ["alpha", "beta"]
-
-    class FakeSettings:
-        def configure(self, lm=None):
+        def get_lm_usage(self):
             return None
 
-    class FakeDspyModule:
-        settings = FakeSettings()
+    class FakePredict:
+        def __call__(self, prompt: str):
+            return FakePrediction(["alpha", "beta"])
 
-        def Predictor(self, model):
-            return FakePred()
-
-    monkeypatch.setattr(ds, "dspy", FakeDspyModule())
+    monkeypatch.setattr(ds, "configure_dspy", lambda: FakePredict())
+    monkeypatch.setattr(ds, "get_dspy_model", lambda: "test:model")
 
     # Ensure CLI will process at least one item
     from raindrop_enhancer.storage.sqlite_store import SQLiteStore as StoreClass
@@ -49,9 +37,7 @@ def test_cli_with_dspy_callable_predictor(monkeypatch, tmp_path):
     runner = CliRunner()
     db_file = tmp_path / "links.db"
 
-    result = runner.invoke(
-        cli_mod.tags, ["generate", "--db-path", str(db_file), "--dry-run"]
-    )
+    result = runner.invoke(cli_mod.tags, ["generate", "--db-path", str(db_file), "--dry-run"])
 
     assert result.exit_code == 0
     # Output should indicate at least one processed link

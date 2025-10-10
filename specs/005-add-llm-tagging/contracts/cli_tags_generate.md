@@ -5,7 +5,7 @@ Generate English Title Case tags (≤20 chars) for stored links that currently l
 
 ## Invocation
 ```
-uv run raindrop-enhancer tags generate [OPTIONS]
+uv run raindrop-tags generate [OPTIONS]
 ```
 
 ## Options

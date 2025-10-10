@@ -140,23 +140,22 @@ You can generate auto-tags for links stored in the local SQLite DB using the DSP
 Basic dry-run (no DB writes):
 
 ```bash
-uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
 ```
 
 Persist generated tags (writes to DB):
 
 ```bash
-uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db
 ```
 
 Important flags:
-- `--require-dspy`: fail immediately if DSPy is not configured (useful for CI/production to avoid fallback fake predictor)
 - `--fail-on-error`: return non-zero exit code (4) if any individual link generation failed
 - `--json`: print a JSON summary (suitable for CI parsing)
 
 Exit codes:
 - `0` — success
-- `2` — DSPy required but not configured (when `--require-dspy` is used)
+- `2` — DSPy required but not configured
 - `3` — persistence/write failure when saving generated tags
 - `4` — per-link generation failures when `--fail-on-error` is used
 
@@ -200,5 +199,6 @@ export RAINDROP_DSPY_MODEL=openai/gpt-4o-mini
 
 Notes:
 
-- When `--require-dspy` is passed to `tags generate`, the CLI will exit with code `2` if DSPy cannot be configured with the specified model and credentials. Without `--require-dspy` the CLI falls back to a deterministic fake predictor for dry-run and testing flows.
-- If you plan to run tagging in CI or production, prefer explicit `RAINDROP_DSPY_*` environment variables and `--require-dspy` to avoid accidental fallbacks.
+- The `tags generate` command requires DSPy to be configured. If DSPy cannot be configured with the specified model and credentials, the command will exit with code `2`.
+
+- For CI or production runs, set the `RAINDROP_DSPY_*` environment variables to ensure the predictor is available.

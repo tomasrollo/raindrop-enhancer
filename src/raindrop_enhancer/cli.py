@@ -446,7 +446,6 @@ def tags():
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
 @click.option("--quiet", is_flag=True, help="Suppress non-error output")
 @click.option("--verbose", is_flag=True, help="Verbose output")
-@click.option("--require-dspy", is_flag=True, help="Require DSPy configuration; fail if missing")
 @click.option(
     "--fail-on-error",
     is_flag=True,
@@ -459,7 +458,6 @@ def tags_generate(
     as_json: bool,
     quiet: bool,
     verbose: bool,
-    require_dspy: bool,
     fail_on_error: bool,
 ):
     """Generate auto-tags for untagged links and optionally persist them."""
@@ -469,6 +467,19 @@ def tags_generate(
     from .content.dspy_settings import configure_dspy, get_dspy_model, DSPyConfigError
 
     _configure_logging(quiet=quiet, verbose=verbose)
+
+    # Log invocation parameters for debugging/observability
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "tags_generate invoked with db_path=%r limit=%r dry_run=%r as_json=%r quiet=%r verbose=%r fail_on_error=%r",
+        db_path,
+        limit,
+        dry_run,
+        as_json,
+        quiet,
+        verbose,
+        fail_on_error,
+    )
 
     dbp = Path(db_path) if db_path else default_db_path()
     store = SQLiteStore(dbp)
@@ -481,41 +492,13 @@ def tags_generate(
         # predictor is a callable prompt -> (list[str], Optional[int])
         pw = predictor
     except DSPyConfigError as e:
-        model_name = "unknown"
-        if require_dspy:
-            click.echo(f"DSPy configuration required but missing: {e}", err=True)
-            raise SystemExit(2)
+        click.echo(f"DSPy configuration required but missing: {e}", err=True)
+        raise SystemExit(2)
 
-        # fallback fake predictor for dry-run and testing: provide a
-        # dspy.Predict-like object that returns Prediction-like results.
-        class FakePrediction:
-            def __init__(self, tags, tokens=None):
-                self.tags = tags
-                class U:
-                    def __init__(self, tokens):
-                        self.total_tokens = tokens
-                self._usage = U(tokens) if tokens is not None else None
-
-            def get_lm_usage(self):
-                return self._usage
-
-        class FakePredict:
-            def __call__(self, prompt: str):
-                parts = prompt.split()
-                tags = [" ".join(parts[i : i + 2]) for i in range(0, min(6, len(parts)), 2)]
-                return FakePrediction(tags, tokens=None)
-
-            def batch(self, prompts):
-                out = []
-                for p in prompts:
-                    out.append(self.__call__(p))
-                return out
-
-        pw = FakePredict()
-
-    runner = TagGenerationRunner(pw, model_name=model_name, batch_size=5)
+    runner = TagGenerationRunner(predictor, model_name=model_name, batch_size=5)
 
     items = store.fetch_untagged_links(limit=limit)
+    logger.debug("Fetched %s untagged links from DB", len(items))
 
     # Prepare progress reporting and result collection
     total = len(items)

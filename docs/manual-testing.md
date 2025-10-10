@@ -154,7 +154,7 @@ PY
 - Dry-run (no DB writes):
 
 ```bash
-uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db --dry-run --verbose
 ```
 
 Expected:
@@ -163,20 +163,20 @@ Expected:
 - Persist generated tags (writes to DB):
 
 ```bash
-uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db
 ```
 
 Expected:
 - Writes `auto_tags_json` and `auto_tags_meta_json` columns in `raindrop_links` for updated links. Exit code 0 on success.
 
-- CI-style run (fail if DSPy missing):
+CI-style run:
 
 ```bash
-uv run raindrop-enhancer tags generate --db-path ./tmp/raindrops.db --require-dspy --json
+uv run raindrop-tags generate --db-path ./tmp/raindrops.db --json
 ```
 
 Expected:
-- If `RAINDROP_DSPY_MODEL` is missing, exit code 2 and an error message. If present, emits JSON summary.
+- The `tags generate` command requires DSPy to be configured. If `RAINDROP_DSPY_MODEL` or API credentials are missing the command will exit with code 2 and an error message. If configured, emits JSON summary.
 
 ## Quickstart run: LLM-assisted tagging (T021)
 

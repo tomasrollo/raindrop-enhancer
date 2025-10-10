@@ -13,14 +13,14 @@ Follow these steps to exercise the new tagging workflow end-to-end once implemen
 
 ## 2. Dry-run tagging
 ```bash
-uv run raindrop-enhancer tags generate --dry-run --limit 5 --verbose
+uv run raindrop-tags generate --dry-run --limit 5 --verbose
 ```
 - Confirms CLI wiring, displays Rich progress, and prints preview tags without DB writes.
 - Expect summary JSON (when `--json` used) to list `generated`, `skipped_existing`, and `failed` counts.
 
 ## 3. Persist tags for untagged links
 ```bash
-uv run raindrop-enhancer tags generate --limit 100
+uv run raindrop-tags generate --limit 100
 ```
 - Processes 100 untagged links (or all if fewer).
 - Writes normalized tags to `auto_tags_json` and metadata to `auto_tags_meta_json`.
@@ -43,13 +43,13 @@ PY
 
 ## 5. Rerun to confirm idempotency
 ```bash
-uv run raindrop-enhancer tags generate --limit 50
+uv run raindrop-tags generate --limit 50
 ```
 - Should skip links already tagged (reported in summary) and exit quickly.
 
 ## 6. Cleanup / reset (optional)
 ```bash
-uv run raindrop-enhancer tags reset --raindrop-id 12345
+uv run raindrop-tags reset --raindrop-id 12345
 ```
 - Example follow-up command (if implemented) to clear auto tags for a specific link.
 - Ensures migrations left manual tags untouched.
