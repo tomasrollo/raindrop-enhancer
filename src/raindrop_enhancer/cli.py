@@ -65,7 +65,7 @@ def _configure_logging(quiet: bool, verbose: bool) -> None:
     default=120,
     help="Requests per minute to honor when enforcing rate-limit",
 )
-def main(
+def export(
     output: str,
     quiet: bool,
     verbose: bool,
@@ -196,10 +196,6 @@ def main(
         client.close()
 
 
-if __name__ == "__main__":
-    main()
-
-
 @click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--full-refresh", is_flag=True, help="Perform a full refresh (backup & rebuild)")
@@ -302,7 +298,7 @@ def sync(
             click.echo(f"Requests made: {outcome.requests_count}; Retries: {outcome.retries_count}")
 
 
-@click.command(name="capture-content")
+@click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
 @click.option("--dry-run", is_flag=True, help="Do not mutate the DB; show what would be done")
@@ -376,7 +372,7 @@ def capture_content(
         raise SystemExit(1)
 
 
-@click.command(name="migrate")
+@click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--target", default="content-markdown", help="Migration target identifier")
 @click.option("--yes", is_flag=True, help="Apply migration without prompting")
@@ -436,7 +432,7 @@ def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
         raise SystemExit(1)
 
 
-@click.command(name="generate")
+@click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
 @click.option("--dry-run", is_flag=True, help="Do not persist tags; just show what would be done")
@@ -595,54 +591,20 @@ def tags_generate(
 
 
 @click.group()
-def tag():
-    """Top-level `tag` group - exposes `generate` subcommand."""
-
-
-try:
-    tag.add_command(tags_generate, name="generate")
-except Exception:
-    pass
-
-
-@click.group()
 def cli():
     """Unified CLI entrypoint for raindrop-enhancer."""
 
 
 # Top-level CLI group: register existing commands as subcommands to provide
-# a single entrypoint `raindrop-enhancer` while preserving current functions.
-try:
-    cli.add_command(main, name="export")
-except Exception:
-    # If `main` is not present yet (during TDD), ignore registration.
-    pass
-
-try:
-    cli.add_command(sync, name="sync")
-except Exception:
-    pass
-
-try:
-    # capture_content -> expose as `capture`
-    cli.add_command(capture_content, name="capture")
-except Exception:
-    pass
-
-try:
-    cli.add_command(migrate, name="migrate")
-except Exception:
-    pass
-try:
-    # Provide the old flat registration for callers that expect a command `tag`
-    # to be directly callable (keeps some backwards compatibility).
-    cli.add_command(tags_generate, name="tag")
-except Exception:
-    pass
-
-try:
-    # Also register the `tag` group (which exposes `generate`) so the
-    # invocation `raindrop-enhancer tag generate` works.
-    cli.add_command(tag, name="tag")
-except Exception:
-    pass
+# a single entrypoint `raindrop-enhancer`
+for cmd, name in [
+    (export, "export"),
+    (sync, "sync"),
+    (capture_content, "capture"),
+    (migrate, "migrate"),
+    (tags_generate, "tag"),
+]:
+    try:
+        cli.add_command(cmd, name=name)
+    except Exception as e:
+        logging.error(f"Failed to add command '{name}': {e}")

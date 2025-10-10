@@ -1,12 +1,12 @@
 import os
 from click.testing import CliRunner
-from raindrop_enhancer.cli import main
+from raindrop_enhancer.cli import export
 
 
 def test_export_missing_token_exits_with_error(monkeypatch):
     monkeypatch.delenv("RAINDROP_TOKEN", raising=False)
     runner = CliRunner()
-    result = runner.invoke(main, ["--dry-run"])
+    result = runner.invoke(export, ["--dry-run"])
     assert result.exit_code == 2
 
 
@@ -32,6 +32,6 @@ def test_export_success_writes_json(monkeypatch, httpx_mock):
     )
 
     runner = CliRunner()
-    result = runner.invoke(main, ["--dry-run"])
+    result = runner.invoke(export, ["--dry-run"])
     assert result.exit_code == 0
     assert "Dry run: collected" in result.output
