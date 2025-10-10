@@ -39,20 +39,23 @@ def configure_dspy() -> Callable[[str], Tuple[List[str], Optional[int]]]:
         # RAINDROP_DSPY_MODEL and no plausible API key env var is present, treat
         # DSPy as "not configured" so callers can opt-in to failing fast.
         model_env = os.environ.get("RAINDROP_DSPY_MODEL")
-        possible_keys = [
+        # Prefer RAINDROP-scoped API key env vars for determinism in user projects and tests.
+        # Do not treat common global keys like OPENAI_API_KEY as sufficient unless an
+        # explicit RAINDROP_DSPY_MODEL is also provided. This prevents leaking local
+        # developer credentials into test runs which expect DSPy to be 'missing'.
+        raindrop_scoped_keys = [
             os.environ.get("RAINDROP_DSPY_API_KEY"),
             os.environ.get("RAINDROP_DSPY_OPENAI_API_KEY"),
             os.environ.get("RAINDROP_DSPY_ANTHROPIC_API_KEY"),
             os.environ.get("RAINDROP_DSPY_GEMINI_API_KEY"),
-            os.environ.get("OPENAI_API_KEY"),
-            os.environ.get("ANTHROPIC_API_KEY"),
-            os.environ.get("GEMINI_API_KEY"),
         ]
-        if model_env is None and not any(possible_keys):
-            # No explicit model and no API keys -> consider DSPy unconfigured
-            raise DSPyConfigError(
-                "DSPy not configured: set RAINDROP_DSPY_MODEL or provide a provider API key"
-            )
+
+        # Consider DSPy configured when either an explicit model is set, or a
+        # RAINDROP-prefixed API key is provided. Global keys like OPENAI_API_KEY
+        # are only used as fallbacks later when resolving provider credentials.
+        if model_env is None and not any(raindrop_scoped_keys):
+            # No explicit model and no RAINDROP-prefixed API keys -> consider DSPy unconfigured
+            raise DSPyConfigError("DSPy not configured: set RAINDROP_DSPY_MODEL or provide a RAINDROP_DSPY_* API key")
 
         # Configure LM with provider API key / api_base when present
         model = get_dspy_model()
@@ -75,9 +78,7 @@ def configure_dspy() -> Callable[[str], Tuple[List[str], Optional[int]]]:
                 api_key = os.environ.get("GEMINI_API_KEY")
 
         # Optional custom API base (for OpenAI-compatible provider endpoints)
-        api_base = os.environ.get("RAINDROP_DSPY_API_BASE") or os.environ.get(
-            f"{provider.upper()}_API_BASE"
-        )
+        api_base = os.environ.get("RAINDROP_DSPY_API_BASE") or os.environ.get(f"{provider.upper()}_API_BASE")
 
         lm_kwargs = {}
         if api_key:
@@ -92,9 +93,7 @@ def configure_dspy() -> Callable[[str], Tuple[List[str], Optional[int]]]:
             """Generate tags for input text."""
 
             text: str = dspy.InputField(description="Input text for tag generation.")
-            tags: List[str] = dspy.OutputField(
-                description="List of tags most relevant to the input text."
-            )
+            tags: List[str] = dspy.OutputField(description="List of tags most relevant to the input text.")
 
         pred = dspy.Predict(_TagSignature)
 
