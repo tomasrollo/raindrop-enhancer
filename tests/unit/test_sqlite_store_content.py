@@ -43,3 +43,13 @@ def test_update_and_clear_content(tmp_path: Path):
     cur.execute("SELECT content_markdown FROM raindrop_links WHERE raindrop_id = 2")
     row2 = cur.fetchone()
     assert row2[0] is None
+
+
+def test_connect_ensures_content_columns(tmp_path: Path):
+    db = tmp_path / "auto-migration.db"
+    store = SQLiteStore(db)
+    store.connect()
+    cur = store.conn.cursor()
+    cur.execute("PRAGMA table_info(raindrop_links)")
+    cols = {row[1] for row in cur.fetchall()}
+    assert {"content_markdown", "content_fetched_at", "content_source"} <= cols

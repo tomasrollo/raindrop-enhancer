@@ -31,10 +31,10 @@ def test_schema_creation(tmp_path: Path):
     names = {r[0] for r in cur.fetchall()}
     assert "raindrop_links" in names
     assert "sync_state" in names
-    # user_version should be 1
+    # user_version reflects latest applied migrations
     cur.execute("PRAGMA user_version")
     uv = cur.fetchone()[0]
-    assert int(uv) == 1
+    assert int(uv) >= 3
     cur.close()
 
 
@@ -106,9 +106,8 @@ def test_ensure_tagging_columns_creates_columns(tmp_path: Path):
     """
     db = tmp_path / "test.db"
     store = SQLiteStore(db)
-    # connect creates base schema but does not auto-apply migrations; run migration helper explicitly
     store.connect()
-    store._ensure_tagging_columns()
+    store._ensure_tagging_columns()  # ensure idempotent when called manually
     cur = store.conn.cursor()
     cur.execute("PRAGMA table_info(raindrop_links)")
     cols = {row[1]: row for row in cur.fetchall()}  # name -> row

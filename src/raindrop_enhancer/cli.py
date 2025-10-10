@@ -374,66 +374,6 @@ def capture_content(
 
 @click.command()
 @click.option("--db-path", default=None, help="Path to SQLite DB file")
-@click.option("--target", default="content-markdown", help="Migration target identifier")
-@click.option("--yes", is_flag=True, help="Apply migration without prompting")
-@click.option("--quiet", is_flag=True, help="Suppress non-error output")
-def migrate(db_path: str, target: str, yes: bool, quiet: bool) -> None:
-    """Run migrations on the local SQLite DB.
-
-    Currently supported target: `content-markdown` which adds columns required for
-    the capture-content feature. This command makes a backup before applying changes.
-    """
-    _configure_logging(quiet=quiet, verbose=False)
-
-    from .sync.orchestrator import default_db_path
-    from .storage.sqlite_store import SQLiteStore
-
-    dbp = Path(db_path) if db_path else default_db_path()
-
-    click.echo(f"Migration target: {target}")
-    click.echo(f"Database: {dbp}")
-
-    if target != "content-markdown":
-        click.echo(f"Unknown migration target: {target}", err=True)
-        raise SystemExit(2)
-
-    if not yes:
-        confirmed = click.confirm(f"Proceed to migrate database at {dbp}? This will create a backup.")
-        if not confirmed:
-            click.echo("Migration cancelled by user")
-            return
-
-    store = SQLiteStore(dbp)
-    # Create parent directory if missing and connect
-    try:
-        store.connect()
-    except Exception:
-        # Even if DB not present, connect ensures path exists and schema created
-        store = SQLiteStore(dbp)
-        store.connect()
-
-    # Backup DB if it exists on disk
-    try:
-        if dbp.exists():
-            bak = store.backup_db()
-            click.echo(f"Backup created: {bak}")
-            # backup_db closes the connection; reconnect before migration
-            store.connect()
-    except Exception as exc:
-        click.echo(f"Backup failed: {repr(exc)}", err=True)
-        raise SystemExit(1)
-
-    # Apply migration
-    try:
-        store._ensure_content_columns()
-        click.echo("Migration applied: content_markdown and related columns ensured.")
-    except Exception as exc:
-        click.echo(f"Migration failed: {repr(exc)}", err=True)
-        raise SystemExit(1)
-
-
-@click.command()
-@click.option("--db-path", default=None, help="Path to SQLite DB file")
 @click.option("--limit", default=None, type=int, help="Maximum links to process")
 @click.option("--dry-run", is_flag=True, help="Do not persist tags; just show what would be done")
 @click.option("--json", "as_json", is_flag=True, help="Emit JSON summary to stdout")
@@ -601,7 +541,6 @@ for cmd, name in [
     (export, "export"),
     (sync, "sync"),
     (capture_content, "capture"),
-    (migrate, "migrate"),
     (tags_generate, "tag"),
 ]:
     try:
