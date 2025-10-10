@@ -140,13 +140,13 @@ You can generate auto-tags for links stored in the local SQLite DB using the DSP
 Basic dry-run (no DB writes):
 
 ```bash
-uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db --dry-run --verbose
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --dry-run --verbose
 ```
 
 Persist generated tags (writes to DB):
 
 ```bash
-uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db
 ```
 
 Important flags:

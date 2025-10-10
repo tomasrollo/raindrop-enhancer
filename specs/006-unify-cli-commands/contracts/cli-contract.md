@@ -72,7 +72,7 @@ The following contract maps each existing command implementation in `src/raindro
 	- Backup or migration failures should exit non-zero (current implementation uses exit `1` for backup/migration errors).
 
 5) tag (maps to `tags generate` group)
-- Command name: `raindrop-enhancer tag generate` (or `raindrop-enhancer tags generate` if preserving original group name; tests should assert whichever naming decision is implemented)
+- Command name: `raindrop-enhancer tag` (or `raindrop-enhancer tags generate` if preserving original group name; tests should assert whichever naming decision is implemented)
 - Options (from `tags_generate`):
 	- `--db-path PATH`
 	- `--limit N`

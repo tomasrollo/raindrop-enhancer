@@ -154,7 +154,7 @@ PY
 - Dry-run (no DB writes):
 
 ```bash
-uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db --dry-run --verbose
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --dry-run --verbose
 ```
 
 Expected:
@@ -163,7 +163,7 @@ Expected:
 - Persist generated tags (writes to DB):
 
 ```bash
-uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db
 ```
 
 Expected:

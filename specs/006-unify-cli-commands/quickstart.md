@@ -31,7 +31,7 @@ uv run raindrop-enhancer capture https://example.com/article
 uv run raindrop-enhancer migrate
 
 # Generate tags (requires dspy)
-uv run raindrop-enhancer tag generate --db-path ./tmp/raindrops.db --dry-run
+uv run raindrop-enhancer tag --db-path ./tmp/raindrops.db --dry-run
 ```
 
 ## Migration notes
@@ -52,7 +52,7 @@ rg -l "capture-content" | xargs sed -i '' 's/capture-content/raindrop-enhancer c
 # replace raindrop-migrate with raindrop-enhancer migrate
 rg -l "raindrop-migrate" | xargs sed -i '' 's/raindrop-migrate/raindrop-enhancer migrate/g'
 
-# replace raindrop-tags generate with raindrop-enhancer tag generate
+# replace raindrop-tags generate with raindrop-enhancer tag
 rg -l "raindrop-tags" | xargs sed -i '' 's/raindrop-tags/raindrop-enhancer tag/g'
 ```
 
